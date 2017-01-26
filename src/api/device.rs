@@ -4,11 +4,11 @@ use super::Processor;
 
 #[derive(Clone)]
 pub struct Device<T> {
-	pub(super::super) id: isize,
-	pub(super::super) name: Option<Cow<'static, str>>,
-	pub(super::super) processor: Option<Processor>,
-	pub(super::super) compute_units: Option<isize>,
-	pub(super::super) phantom: PhantomData<T>
+	pub id: isize,
+	pub name: Option<Cow<'static, str>>,
+	pub processor: Option<Processor>,
+	pub compute_units: Option<isize>,
+	pub phantom: PhantomData<T>
 }
 
 impl<T> Default for Device<T> {

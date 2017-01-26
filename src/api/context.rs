@@ -15,7 +15,7 @@ impl Context {
 		}
 	}
 
-	pub(super) fn alloc(&self, size: usize) -> Result<Memory, Error> {
+	pub fn alloc(&self, size: usize) -> Result<Memory, Error> {
 
 		let mem = match self {
 			#[cfg(feature = "native")]
@@ -25,7 +25,7 @@ impl Context {
 		Ok(mem)
 	}
 
-	pub(super) fn sync_in(&self, context: &Context, memory: &Memory, destination: &mut Memory)
+	pub fn sync_in(&self, context: &Context, memory: &Memory, destination: &mut Memory)
 		-> Result<(), Error> {
 
 		match self {

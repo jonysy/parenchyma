@@ -5,7 +5,7 @@ use super::{NativeDevice, NativeMemory};
 
 #[derive(Clone)]
 pub struct NativeContext {
-	pub(super) devices: Vec<NativeDevice>
+	pub devices: Vec<NativeDevice>
 }
 
 impl NativeContext {

@@ -4,12 +4,12 @@ use std::ops::Deref;
 pub struct VecExtn(Vec<usize>);
 
 impl VecExtn {
-	pub(super) fn rank(&self) -> usize {
+	pub fn rank(&self) -> usize {
 
 		self.len()
 	}
 
-	pub(super) fn size(&self) -> usize {
+	pub fn size(&self) -> usize {
 
 		match self.rank() {
 			0 => 1,

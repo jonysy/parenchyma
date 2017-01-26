@@ -2,7 +2,6 @@
 #![cfg_attr(feature = "unstable_alloc", feature(alloc))]
 #![cfg_attr(lint, feature(plugin))]
 #![cfg_attr(lint, plugin(clippy))]
-#![feature(associated_consts, pub_restricted)]
 
 #[macro_use]
 extern crate bitflags;
