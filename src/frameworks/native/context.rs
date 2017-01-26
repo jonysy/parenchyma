@@ -1,33 +1,48 @@
-use {Context, ContextImp, Error, MemoryImp};
-use super::{Native, NativeDevice, NativeMemory};
+use api::{Context, Memory};
+use error::Error;
+use std::hash::{Hash, Hasher};
+use super::{NativeDevice, NativeMemory};
 
 #[derive(Clone)]
 pub struct NativeContext {
-	pub(super) devices: Vec<NativeDevice>,
+	pub(super) devices: Vec<NativeDevice>
 }
 
-impl Context for NativeContext {
+impl NativeContext {
 
-	type Memory = NativeMemory;
-
-	fn id(&self) -> &isize {
+	pub fn id(&self) -> &isize {
 		static ID: isize = 0;
 
 		&ID
 	}
 
-	fn alloc(&self, size: usize) -> Result<Self::Memory, Error> {
-		let bx: Box<[u8]> = super::allocate_boxed_slice(size);
-		Ok(NativeMemory::from(bx))
+	pub fn alloc(&self, size: usize) -> NativeMemory {
+		let b: Box<[u8]> = super::allocate_boxed_slice(size);
+		NativeMemory::from(b)
 	}
 
-	fn sync_in(&self, 
-		source: &ContextImp, 
-		source_data: &MemoryImp, 
-		dest_data: &mut Self::Memory) -> Result<(), Error> {
+	pub fn sync_in(&self, context: &Context, memory: &Memory, destination: &mut Memory)
+		-> Result<(), Error> {
 
-		match source {
-			&ContextImp::Native(_) => unimplemented!(),
+		let native_destination = destination.as_mut_native()?;
+
+		match context {
+			&Context::Native(_) => unimplemented!(),
 		}
 	}
+}
+
+impl Eq for NativeContext { }
+
+impl Hash for NativeContext {
+
+	fn hash<H: Hasher>(&self, state: &mut H) {
+
+		self.id().hash(state);
+	}
+}
+
+impl PartialEq for NativeContext {
+
+	fn eq(&self, _: &Self) -> bool { true }
 }

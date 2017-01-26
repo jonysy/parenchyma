@@ -1,9 +1,9 @@
 [package]
+name = "parenchyma"
+version = "0.1.0"
 authors = ["Jony <jonysy@users.noreply.github.com>"]
 keywords = ["backend", "computation", "opencl", "cuda", "hpc", "high-performance-computing"]
 license = "MIT/Apache-2.0"
-name = "parenchyma"
-version = "0.1.0"
 
 [dependencies]
 bitflags = "0.7.0"

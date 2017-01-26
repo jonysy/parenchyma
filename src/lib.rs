@@ -13,24 +13,12 @@ extern crate lazy_static;
 
 #[cfg(feature = "unstable_alloc")]
 extern crate alloc;
+
 extern crate byteorder;
 extern crate libc;
 extern crate linear_map;
 extern crate num;
 
+pub mod api;
+pub mod error;
 pub mod frameworks;
-
-pub use backend::Backend;
-pub use context::{Context, ContextImp};
-pub use device::{Device, DeviceKind};
-pub use error::Error;
-pub use framework::Framework;
-pub use memory::MemoryImp;
-
-mod backend;
-mod context;
-mod device;
-mod error;
-mod framework;
-mod memory;
-mod tensor;

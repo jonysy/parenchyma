@@ -1,4 +1,4 @@
-use Device;
-use super::NativeContext;
+use api::Device;
+use super::Native;
 
-pub type NativeDevice = Device<NativeContext>;
+pub type NativeDevice = Device<Native>;
