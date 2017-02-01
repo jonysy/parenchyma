@@ -1,5 +1,7 @@
 use error::Error;
 
+type PlaceHolder = ();
+
 /// Provides a representation for memory across different frameworks.
 ///
 /// Memory is allocated by a device in a way that it is accessible for its computations.
@@ -7,6 +9,14 @@ pub enum Memory {
 	/// A native memory representation.
 	#[cfg(feature = "native")]
 	Native(::frameworks::NativeMemory),
+
+	/// An OpenCL memory representation.
+	#[cfg(feature = "opencl")]
+	OpenCl(PlaceHolder),
+
+	/// A CUDA memory representation.
+	#[cfg(feature = "cuda")]
+	Cuda(PlaceHolder),
 }
 
 impl Memory {
