@@ -1,7 +1,7 @@
 # parenchyma
 
-Parenchyma is a hard fork of [Collenchyma][collenchyma-repo], an extendable HPC-Framework for 
-CUDA, OpenCL and common CPU.
+Parenchyma is a hard fork of [Collenchyma][collenchyma-repo], an extendable HPC-Framework originally 
+developed by the [Autumnai team], as well as an [amazing group of contributors][collenchyma-contributors].
 
 ## Usage
 
@@ -28,4 +28,6 @@ fn main() {
 }
 ```
 
+[Autumnai team]: https://github.com/autumnai
 [collenchyma-repo]: https://github.com/autumnai/collenchyma
+[collenchyma-contributors]: https://github.com/autumnai/collenchyma/graphs/contributors
