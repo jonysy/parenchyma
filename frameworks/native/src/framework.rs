@@ -1,5 +1,4 @@
-use api::{Context, Device, Framework, Processor};
-use error::Error;
+use parenchyma::{Framework, Processor};
 use std::borrow::Cow;
 use std::marker::PhantomData;
 use super::{NativeContext, NativeDevice};
@@ -10,13 +9,14 @@ pub struct Native {
 }
 
 impl Framework for Native {
-	
-	fn new() -> Self {
+	type Context = NativeContext;
+
+	fn new() -> Native {
 		let device = NativeDevice {
 			id: 1,
+			compute_units: Some(1),
 			name: Some(Cow::from("Host CPU")),
 			processor: Some(Processor::Cpu),
-			compute_units: Some(1),
 			phantom: PhantomData,
 		};
 
@@ -26,10 +26,5 @@ impl Framework for Native {
 	fn devices(&self) -> &[NativeDevice] {
 
 		&self.devices
-	}
-
-	fn try_context(&self, devices: Vec<Device<Self>>) -> Result<Context, Error> {
-
-		Ok(Context::Native(NativeContext { devices: devices }))
 	}
 }

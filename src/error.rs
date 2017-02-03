@@ -1,43 +1,62 @@
 use std::error;
 
 #[derive(Debug)]
-pub enum ErrorKind {
-	Memory,
-	MissingDestination,
-	InvalidMemoryAllocation,
-
-	/// A marker variant that tells the compiler that users of this enum cannot match it exhaustively.
-	#[doc(hidden)]
-	__Nonexhaustive,
-}
-
-#[derive(Debug)]
 pub struct Error {
-	kind: ErrorKind,
-	error: Box<error::Error>,
+	category: Category,
+	error: Box<error::Error + Send + Sync>,
 }
 
-macro_rules! error_fn {
-	($fun: ident, $kind: expr) => {
+/// A list specifying general error categories.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Category {
+    Tensor(TensorCategory),
 
-		pub fn $fun<E>(error: E) -> Error where E: Into<Box<error::Error>> {
+    Memory(MemoryCategory),
+    
+    /// A marker variant that tells the compiler that users of this enum cannot match 
+    /// it exhaustively.
+    ///
+    /// [Private enum variants #32770](https://github.com/rust-lang/rust/issues/32770)
+    #[doc(hidden)]
+    _NonExhaustive,
+}
 
-			Error::new($kind, error)
-		}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum TensorCategory {
+	Shape, Remove, CapacityExceeded
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum MemoryCategory {
+	NoMemorySyncRoute, Uninitialized, Remove
+}
+
+impl From<TensorCategory> for Category {
+
+	fn from(category: TensorCategory) -> Category {
+		Category::Tensor(category)
+	}
+}
+
+impl From<MemoryCategory> for Category {
+
+	fn from(category: MemoryCategory) -> Category {
+		Category::Memory(category)
 	}
 }
 
 impl Error {
-
-	pub fn new<E: Into<Box<error::Error>>>(kind: ErrorKind, e: E) -> Error {
-
+	pub fn new<T, E>(category: T, error: E) -> Error
+		where T: Into<Category>,
+			  E: Into<Box<error::Error + Send + Sync>>
+	{
 		Error {
-			kind: kind,
-			error: e.into()
+			category: category.into(),
+			error: error.into()
 		}
 	}
 
-	error_fn!(memory, ErrorKind::Memory);
-	error_fn!(missing_destination, ErrorKind::MissingDestination);
-	error_fn!(invalid_memory_allocation, ErrorKind::InvalidMemoryAllocation);
+	pub fn category(&self) -> &Category {
+		&self.category
+	}
 }

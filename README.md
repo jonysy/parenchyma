@@ -8,23 +8,18 @@ developed by the [Autumnai team], as well as an [amazing group of contributors][
 ```toml
 [dependencies]
 parenchyma = "0.1.0"
+parenchyma-native = "0.1.0"
 ```
 
 ```rust
-extern crate parenchyma as chyma;
+extern crate parenchyma;
+extern crate parenchyma_native;
 
-use chyma::api::*;
-use chyma::frameworks::*;
+use parenchyma::Backend;
+use parenchyma_native::Native;
 
 fn main() {
-	// Construct a new framework.
-	let framework = Native::new();
-
-	// Available devices can be obtained through the framework.
-	let select = |devices: &[_]| devices.to_vec();
-
-	// Create a ready to go `Backend` from the framework.
-	let backend = Backend::new(framework, select).expect("Something went wrong!");
+	let backend = Backend::<Native>::default().expect("Something went wrong!");
 }
 ```
 
