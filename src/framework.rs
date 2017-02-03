@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
-use super::{Context, Device, Error};
+use super::{Context, Device};
+use super::error::Error;
 
 pub trait Framework: Sized {
 

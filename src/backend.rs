@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
-use super::{Device, Error, Framework};
+use super::{Device, Framework};
+use super::error::Result;
 
 /// `Backend` is the heart of Parenchyma. `Backend` provides the interface for running parallel 
 /// computations on one ore many devices.
@@ -37,7 +38,7 @@ impl<F> Backend<F> where F: Framework {
 	///	// Create a ready to go `Backend` from the framework.
 	///	let backend = Backend::new(framework, selection).expect("Something went wrong!");
 	/// ```
-	pub fn new(framework: F, selection: Vec<Device<F>>) -> Result<Backend<F>, Error> {
+	pub fn new(framework: F, selection: Vec<Device<F>>) -> Result<Backend<F>> {
 
 		let context = F::Context::try_from(selection)?;
 		let backend = Backend { framework: framework, context: context};
@@ -53,7 +54,7 @@ impl<F> Backend<F> where F: Framework {
 	///
 	/// let backend = Backend::<Native>::default().expect("Something went wrong!");
 	/// ```
-	pub fn default() -> Result<Backend<F>, Error> where F: Clone {
+	pub fn default() -> Result<Backend<F>> where F: Clone {
 		let framework = F::new();
 		let selection = framework.devices().to_vec();
 		Backend::new(framework, selection)

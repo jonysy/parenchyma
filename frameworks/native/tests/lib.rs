@@ -28,6 +28,7 @@ mod framework_spec {
 
 mod shared_memory_spec {
 	use parenchyma::{Framework, SharedTensor};
+	use parenchyma::error::ErrorKind;
 	use parenchyma_native::{Native, NativeContext};
 	use std::convert::TryFrom;
 
@@ -42,28 +43,17 @@ mod shared_memory_spec {
 
 	#[test]
 	fn it_fails_on_initialized_memory_read() {
-		use parenchyma::error;
-
 		let native = Native::new();
 		let context = NativeContext::try_from(native.devices().to_vec()).unwrap();
 		let mut shared_data = SharedTensor::<f32>::new(vec![10]);
 
-		assert_eq!(
-			*shared_data.read(&context).unwrap_err().category(), 
-			error::Category::Memory(error::MemoryCategory::Uninitialized)
-		);
+		assert_eq!(shared_data.read(&context).unwrap_err().kind(), ErrorKind::UninitializedMemory);
 
-		assert_eq!(
-			*shared_data.read_write(&context).unwrap_err().category(),
-			error::Category::Memory(error::MemoryCategory::Uninitialized)
-		);
+		assert_eq!(shared_data.read_write(&context).unwrap_err().kind(), ErrorKind::UninitializedMemory);
 
 		shared_data.write_only(&context).unwrap();
 		shared_data.drop_context(&context).unwrap();
 
-		assert_eq!(
-			*shared_data.read(&context).unwrap_err().category(),
-			error::Category::Memory(error::MemoryCategory::Uninitialized)
-        );
+		assert_eq!(shared_data.read(&context).unwrap_err().kind(), ErrorKind::UninitializedMemory);
 	}
 }

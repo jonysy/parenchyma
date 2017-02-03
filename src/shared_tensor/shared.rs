@@ -3,8 +3,8 @@ use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
 use std::ops::Deref;
 use super::{Location, Tensor};
-use super::super::{Context, Error, ObjectSafeContext};
-use super::super::error;
+use super::super::{Context, ObjectSafeContext};
+use super::super::error::{ErrorKind, Result};
 
 /// `BitMap` type for keeping track of up-to-date locations. If the number of locations provided by
 /// the integer isn't enough, this type can be easily replaced with `BitSet` at the cost of a heap
@@ -35,23 +35,18 @@ impl<T> SharedTensor<T> {
 	}
 
 	/// Change the shape of the Tensor.
-	pub fn reshape<I>(&mut self, shape: I) -> Result<(), Error> where I: Into<Tensor> {
+	pub fn reshape<I>(&mut self, shape: I) -> Result where I: Into<Tensor> {
 
 		let tensor = shape.into();
 
 		if self.tensor.ncomponents == tensor.ncomponents {
+
 			self.tensor = tensor;
+
 			Ok(())
 		} else {
-			let message = 
-				format!(
-					"Size of the provided shape is not equal to the size \
-					of the current shape. {provided} (provided) != {current} (current)",
-					provided=tensor.ncomponents,
-					current=self.tensor.ncomponents
-				);
 
-			Err(Error::new(error::TensorCategory::Shape, message))
+			Err(ErrorKind::InvalidReshapedTensorSize.into())
 		}
 	}
 
@@ -61,7 +56,7 @@ impl<T> SharedTensor<T> {
 		self.tensor = shape.into();
 	}
 
-	pub fn drop_context<C>(&mut self, context: &C) -> Result<(), Error> where C: Context {
+	pub fn drop_context<C>(&mut self, context: &C) -> Result where C: Context {
 
 		match self.get_location_index(context) {
 			Some(i) => {
@@ -75,9 +70,8 @@ impl<T> SharedTensor<T> {
 
 				Ok(())
 			},
-
 			_ => {
-				Err(Error::new(error::TensorCategory::Remove, "Memory isn't allocated for this context"))
+				Err(ErrorKind::AllocatedMemoryNotFoundForContext.into())
 			}
 		}
 	}
@@ -87,11 +81,11 @@ impl<T> SharedTensor<T> {
 		mem::size_of::<T>() * capacity
 	}
 
-	pub fn read<'mem, C>(&'mem self, context: &C) -> Result<&'mem C::Memory, Error> 
+	pub fn read<'mem, C>(&'mem self, context: &C) -> Result<&'mem C::Memory> 
 		where C: Context
 	{
 		if self.up_to_date.get() == 0 {
-			return Err(Error::new(error::MemoryCategory::Uninitialized, "Uninitialized memory"));
+			return Err(ErrorKind::UninitializedMemory.into());
 		}
 
 		let i = self.get_or_create_location_index(context)?;
@@ -107,12 +101,12 @@ impl<T> SharedTensor<T> {
 		Ok(mem_mem_lifetime)
 	}
 
-	pub fn read_write<'mem, C>(&'mem self, context: &C) -> Result<&'mem mut C::Memory, Error>
+	pub fn read_write<'mem, C>(&'mem self, context: &C) -> Result<&'mem mut C::Memory>
 		where C: Context
 	{
 
 		if self.up_to_date.get() == 0 {
-			return Err(Error::new(error::MemoryCategory::Uninitialized, "Uninitialized memory"));
+			return Err(ErrorKind::UninitializedMemory.into());
 		}
 
 		let i = self.get_or_create_location_index(context)?;
@@ -128,7 +122,7 @@ impl<T> SharedTensor<T> {
         Ok(mem_mem_lifetime)
 	}
 
-	pub fn write_only<'mem,  C>(&'mem mut self, context: &C) -> Result<&'mem C::Memory, Error> 
+	pub fn write_only<'mem,  C>(&'mem mut self, context: &C) -> Result<&'mem C::Memory> 
 		where C: Context
 	{
 		let i = self.get_or_create_location_index(context)?;
@@ -147,7 +141,7 @@ impl<T> SharedTensor<T> {
 		Ok(mem_mem_lifetime)
 	}
 
-	fn sync_if_needed(&self, dst_i: usize) -> Result<(), Error> {
+	fn sync_if_needed(&self, dst_i: usize) -> Result {
 		if self.up_to_date.get() & (1 << dst_i) != 0 {
 
         	return Ok(());
@@ -174,9 +168,7 @@ impl<T> SharedTensor<T> {
     	};
 
     	match src_loc.context._sync_out(src_loc.memory.deref(), dst_loc.context._as_any(), dst_loc.memory.as_mut()) {
-    		Err(ref e) if error::Category::Memory(error::MemoryCategory::NoMemorySyncRoute).eq(e.category()) => {
-    			// ?? TODO
-    		},
+    		Err(ref e) if e.kind() == ErrorKind::NoAvailableSynchronizationRouteFound => { },
 
     		x @ _ => return x
     	}
@@ -203,18 +195,14 @@ impl<T> SharedTensor<T> {
 		None
 	}
 
-	fn get_or_create_location_index<C>(&self, context: &C) -> Result<usize, Error> 
-		where C: Context
-	{
+	fn get_or_create_location_index<C>(&self, context: &C) -> Result<usize> where C: Context {
 
 		if let Some(i) = self.get_location_index(context) {
 			return Ok(i)
 		}
 
 		if self.locations.borrow().len() == BIT_MAP_SIZE {
-			let message = format!("Size: {}", self.locations.borrow().len());
-
-			return Err(Error::new(error::TensorCategory::CapacityExceeded, message));
+			return Err(ErrorKind::BitMapCapacityExceeded.into());
 		}
 
 		let nbytes = Self::mem_size(self.ncomponents);

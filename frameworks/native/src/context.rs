@@ -1,5 +1,5 @@
-use parenchyma::{Context, Error};
-use parenchyma::error;
+use parenchyma::Context;
+use parenchyma::error::{Error, ErrorKind, Result};
 use std::any::Any;
 use std::convert::TryFrom;
 use std::hash::{Hash, Hasher};
@@ -22,7 +22,7 @@ impl Context for NativeContext {
 	type Memory = NativeMemory;
 
 	// anti-pattern?
-	fn allocate_memory(&self, size: usize) -> Result<NativeMemory, Error> {
+	fn allocate_memory(&self, size: usize) -> Result<NativeMemory> {
 
 		let bx: Box<[u8]> = memory::allocate_boxed_slice(size);
 		let mem = NativeMemory::from(bx);
@@ -30,7 +30,7 @@ impl Context for NativeContext {
 		Ok(mem)
 	}
 
-	fn sync_in(&self, my_memory: &mut Any, src_device: &Any, src_memory: &Any) -> Result<(), Error> {
+	fn sync_in(&self, my_memory: &mut Any, src_device: &Any, src_memory: &Any) -> Result {
 
 		if let Some(_) = src_device.downcast_ref::<NativeContext>() {
 			let my_mem = my_memory.downcast_mut::<NativeMemory>().unwrap();
@@ -39,10 +39,10 @@ impl Context for NativeContext {
 			return Ok(());
 		}
 
-		Err(Error::new(error::MemoryCategory::NoMemorySyncRoute, "No memory sync route"))
+		Err(ErrorKind::NoAvailableSynchronizationRouteFound.into())
 	}
 
-	fn sync_out(&self, my_memory: &Any, dst_device: &Any, dst_memory: &mut Any) -> Result<(), Error> {
+	fn sync_out(&self, my_memory: &Any, dst_device: &Any, dst_memory: &mut Any) -> Result {
 
 		if let Some(_) = dst_device.downcast_ref::<NativeContext>() {
 			let my_mem = my_memory.downcast_ref::<NativeMemory>().unwrap();
@@ -51,14 +51,14 @@ impl Context for NativeContext {
 			return Ok(());
 		}
 
-		Err(Error::new(error::MemoryCategory::NoMemorySyncRoute, "No memory sync route"))
+		Err(ErrorKind::NoAvailableSynchronizationRouteFound.into())
 	}
 }
 
 impl TryFrom<Vec<NativeDevice>> for NativeContext {
 	type Err = Error;
 
-	fn try_from(devices: Vec<NativeDevice>) -> Result<Self, Self::Err> {
+	fn try_from(devices: Vec<NativeDevice>) -> Result<Self> {
 		
 		Ok(NativeContext { devices: devices })
 	}

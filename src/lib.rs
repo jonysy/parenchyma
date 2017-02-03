@@ -4,7 +4,6 @@ pub mod error;
 pub use self::context::{Context, ObjectSafeContext};
 pub use self::backend::Backend;
 pub use self::device::Device;
-pub use self::error::Error;
 pub use self::framework::Framework;
 pub use self::processor::Processor;
 pub use self::shared_tensor::{SharedTensor, Tensor};
