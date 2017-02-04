@@ -14,12 +14,12 @@ pub struct Tensor {
 	/// # Example
 	///
 	/// ```ignore
-	/// // The following tensor has 9 components (dimension^rank = 3^2)
+	/// // The following tensor has 9 components
 	///
 	/// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 	/// ```
 	pub(super) ncomponents: usize,
-
+	/// The dimensions of the tensor.
 	pub(super) shape: Vec<usize>,
 }
 
@@ -68,7 +68,7 @@ impl<I> From<I> for Tensor where I: Into<Vec<usize>> {
 
 	/// # Example
 	///
-	/// A 0-D tensor (a scalar).
+	/// A scalar.
 	///
 	/// ```rust
 	/// use parenchyma::Tensor;
@@ -84,7 +84,7 @@ impl<I> From<I> for Tensor where I: Into<Vec<usize>> {
 	/// let _ = Tensor::from(vec![5]);
 	/// ```
 	///
-	/// An n-D tensor with shape `[D_1, D_2, ..., D_n]`
+	/// A tensor with shape `[D_1, D_2, ..., D_n]`
 	///
 	/// ```rust,ignore
 	/// let tensor = Tensor::from(vec![D_1, D_2, ..., D_n]);
