@@ -19,7 +19,7 @@ mod framework_spec {
 	use parenchyma_native::Native;
 
 	#[test]
-	fn it_works() {
+	fn it_can_get_native_device() {
 		let framework = Native::new();
 		assert_eq!(framework.devices().len(), 1);
 	}
