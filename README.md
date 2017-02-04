@@ -1,7 +1,7 @@
 # parenchyma
 
 Parenchyma is a hard fork of [Collenchyma][collenchyma-repo], an extendable HPC-Framework originally 
-developed by the [Autumnai team], as well as an [amazing group of contributors][collenchyma-contributors].
+developed by the [Autumn team], as well as an [amazing group of contributors][collenchyma-contributors].
 
 ## Usage
 
@@ -19,7 +19,7 @@ use parenchyma::Backend;
 use parenchyma_native::Native;
 
 fn main() {
-	let backend = Backend::<Native>::default().expect("Something went wrong!");
+	let backend = Backend::<Native>::default().expect("something went wrong!");
 }
 ```
 
@@ -29,7 +29,7 @@ Dual licensed under
   * Apache License, Version 2.0 ([LICENSE-APACHE] or http://www.apache.org/licenses/LICENSE-2.0)
   * MIT license ([LICENSE-MIT] or http://opensource.org/licenses/MIT)
 
-[Autumnai team]: https://github.com/autumnai
+[Autumn team]: https://github.com/autumnai
 [collenchyma-repo]: https://github.com/autumnai/collenchyma
 [collenchyma-contributors]: https://github.com/autumnai/collenchyma/graphs/contributors
 [LICENSE-APACHE]: ../../../license/blob/master/LICENSE-APACHE
