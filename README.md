@@ -1,7 +1,7 @@
 # parenchyma
 
 Parenchyma is a hard fork of [Collenchyma][collenchyma-repo], an extendable HPC-Framework originally 
-developed by the [Autumn team], as well as an [amazing group of contributors][collenchyma-contributors].
+developed by the [Autumn team] as well as an [amazing group of contributors][collenchyma-contributors].
 
 ## Usage
 
