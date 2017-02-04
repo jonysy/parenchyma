@@ -31,10 +31,10 @@ const BIT_MAP_SIZE: usize = 64;
 ///
 /// ## Terminology
 ///
-/// In Parenchyma, a tensor is a homogeneous multi-dimensional matrix. A scalar value like `3` 
-/// represents a tensor with a rank of 0, and a Rust array like `[1, 2, 3]` represents a tensor 
-/// with a rank of 1. An array of arrays like `[[1, 2, 3], [4, 5, 6]]` represents a tensor with a 
-/// rank of 2.
+/// In Parenchyma, multidimensional Rust arrays represent tensors. A vector (a tensor with a 
+/// rank of 1) in an n-dimensional space is represented by a one-dimensional Rust array of 
+/// length n. Scalars (tensors with a rank of 0) are represented by numbers (e.g., `3`). An array of 
+/// arrays like `[[1, 2, 3], [4, 5, 6]]` represents a tensor with a rank of 2.
 ///
 /// ## Examples
 ///
