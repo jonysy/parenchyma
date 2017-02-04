@@ -34,7 +34,7 @@ const BIT_MAP_SIZE: usize = 64;
 /// In Parenchyma, multidimensional Rust arrays represent tensors. A vector (a tensor with a 
 /// rank of 1) in an n-dimensional space is represented by a one-dimensional Rust array of 
 /// length n. Scalars (tensors with a rank of 0) are represented by numbers (e.g., `3`). An array of 
-/// arrays like `[[1, 2, 3], [4, 5, 6]]` represents a tensor with a rank of 2.
+/// arrays, such as `[[1, 2, 3], [4, 5, 6]]`, represents a tensor with a rank of 2.
 ///
 /// ## Examples
 ///
