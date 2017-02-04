@@ -3,30 +3,8 @@ name = "parenchyma"
 version = "0.1.0"
 authors = ["Jony <jonysy@users.noreply.github.com>"]
 keywords = ["backend", "computation", "opencl", "cuda", "hpc", "high-performance-computing"]
+categories = []
 license = "MIT/Apache-2.0"
 
-[dependencies]
-bitflags = "0.7.0"
-byteorder = "1.0.0"
-enum_primitive = "0.1.1"
-lazy_static = "0.2.2"
-libc = "0.2.20"
-linear-map = "1.1.0"
-num = "0.1.36"
-
-[dependencies.clippy]
-optional = true
-version = "0.0.111"
-
-[features]
-default = ["native", "cuda", "opencl"]
-native = []
-cuda = []
-opencl = []
-
-unstable_alloc = [] # faster but unstable memory allocation on native machines
-
-dev = []
-unstable = [] # for travis-cargo
-travis = ["native"]
-lint = ["clippy"]
+[workspace]
+members = ["./frameworks/native"]

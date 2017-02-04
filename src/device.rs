@@ -3,23 +3,23 @@ use std::marker::PhantomData;
 use super::Processor;
 
 #[derive(Clone)]
-pub struct Device<T> {
+pub struct Device<F> {
 	pub id: isize,
+	pub compute_units: Option<isize>,
 	pub name: Option<Cow<'static, str>>,
 	pub processor: Option<Processor>,
-	pub compute_units: Option<isize>,
-	pub phantom: PhantomData<T>
+	pub phantom: PhantomData<F>,
 }
 
-impl<T> Default for Device<T> {
+impl<F> Default for Device<F> {
 
-	fn default() -> Device<T> {
+	fn default() -> Self {
 
 		Device {
 			id: -1,
+			compute_units: None,
 			name: None,
 			processor: None,
-			compute_units: None,
 			phantom: PhantomData,
 		}
 	}

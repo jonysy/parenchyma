@@ -1,10 +1,20 @@
-use std::{mem, slice};
+#[cfg(not(feature = "unstable_alloc"))]
+pub use self::stable_alloc::allocate_boxed_slice;
+#[cfg(feature = "unstable_alloc")]
+pub use self::unstable_alloc::allocate_boxed_slice;
+
+#[cfg(not(feature = "unstable_alloc"))]
+mod stable_alloc;
+#[cfg(feature = "unstable_alloc")]
+mod unstable_alloc;
+
+use std::{fmt, mem, slice};
 
 /// A `Box` without any knowledge of its underlying type.
 pub struct NativeMemory {
 	/// The wrapped raw pointer
 	raw: *mut [u8],
-	len: usize,
+	len: usize
 }
 
 impl NativeMemory {
@@ -43,4 +53,12 @@ impl Drop for NativeMemory {
 			let _ = Box::from_raw(self.raw);
 		}
 	}
+}
+
+impl fmt::Debug for NativeMemory {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+
+        write!(f, "FlatBox of length {}", self.len)
+    }
 }
