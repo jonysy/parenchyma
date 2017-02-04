@@ -4,7 +4,7 @@ use super::Error;
 pub enum ErrorKind {
 	/// A framework-specific error.
 	Framework { name: &'static str },
-	/// `BitMap` (currently a type alias for `u64`) capacity has been reached.
+	/// Maximum number of backing memories has been reached (`BitMap` - type alias for `u64`).
 	BitMapCapacityExceeded,
 	/// Invalid reshaped tensor size.
 	InvalidReshapedTensorSize,

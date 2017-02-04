@@ -23,6 +23,14 @@ fn main() {
 }
 ```
 
+## License
+
+Dual licensed under
+  * Apache License, Version 2.0 ([LICENSE-APACHE] or http://www.apache.org/licenses/LICENSE-2.0)
+  * MIT license ([LICENSE-MIT] or http://opensource.org/licenses/MIT)
+
 [Autumnai team]: https://github.com/autumnai
 [collenchyma-repo]: https://github.com/autumnai/collenchyma
 [collenchyma-contributors]: https://github.com/autumnai/collenchyma/graphs/contributors
+[LICENSE-APACHE]: ../../../license/blob/master/LICENSE-APACHE
+[LICENSE-MIT]: ../../../license/blob/master/LICENSE-MIT

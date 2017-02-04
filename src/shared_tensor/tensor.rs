@@ -1,5 +1,5 @@
 pub struct Tensor {
-	/// The total number of contravariant and covariant indices.
+	/// The total number of indices.
 	///
 	/// # Example
 	///
@@ -9,18 +9,13 @@ pub struct Tensor {
 	/// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 	/// ```
 	pub(super) rank: usize,
-	/// The number of components:
-	///
-	/// ```ignore
-	/// dimension^(r + s) = dimension^rank
-	///
-	/// where r is the number of contravariant indices and s is the number of covariant indices
-	/// ```
+	/// The number of components.
 	///
 	/// # Example
 	///
-	/// The following tensor has 9 components (dimension^rank = 3^2)
 	/// ```ignore
+	/// // The following tensor has 9 components (dimension^rank = 3^2)
+	///
 	/// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 	/// ```
 	pub(super) ncomponents: usize,
@@ -38,6 +33,12 @@ impl Tensor {
 		&self.shape
 	}
 
+	/// Returns the default stride for an allocated tensor.
+	///
+	/// A rank 2 tensor with dimensions [a, b] has a default stride of [b, 1]
+	/// A rank 3 Tensor with dimensions [a, b, c] has a default stride of [b * c, c, 1]
+	/// A rank 4 Tensor with dimensions [a, b, c, d] has a default stride of [b * c * d, c * d, d, 1]
+	/// and so on..
 	pub fn default_stride(&self) -> Vec<usize> {
 		let mut strides: Vec<usize> = Vec::with_capacity(self.rank);
 		let length = self.shape.len();
@@ -93,7 +94,7 @@ impl<I> From<I> for Tensor where I: Into<Vec<usize>> {
 		let shape = shape.into();
 
 		let rank = shape.len();
-		let ncomponents = if rank == 0 { 1 } else { shape.iter().fold(1, |s, &a| s * a) };
+		let ncomponents = shape.iter().fold(1, |s, &a| s * a);
 
 		Tensor {
 			rank: rank,

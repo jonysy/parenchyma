@@ -15,6 +15,34 @@ type BitMap = u64;
 /// in a clean manner, though there are plans to add a static method or an associated constant.
 const BIT_MAP_SIZE: usize = 64;
 
+/// Container that handles synchronization of `Memory` of type `T` and provides the functionality 
+/// for memory management across contexts.
+///
+/// A tensor is a potentially multi-dimensional matrix containing information about the actual 
+/// data and its structure. A Parenchyma tensor tracks the memory copies of the numeric data of 
+/// a tensor across the context of the backend and manages:
+///
+/// * the location of these memory copies
+/// * the location of the latest memory copy and
+/// * the synchronization of memory copies between contexts
+///
+/// This is important, as this provides a unified data interface for executing tensor operations 
+/// on CUDA, OpenCL and common host CPU.
+///
+/// ## Terminology
+///
+/// In Parenchyma, a tensor is a homogeneous multi-dimensional matrix. A scalar value like `3` 
+/// represents a tensor with a rank of 0, and a Rust array like `[1, 2, 3]` represents a tensor 
+/// with a rank of 1. An array of arrays like `[[1, 2, 3], [4, 5, 6]]` represents a tensor with a 
+/// rank of 2.
+///
+/// ## Examples
+///
+/// Create a `SharedTensor` and fill it with some numbers:
+///
+/// ```rust
+///	// TODO..
+/// ```
 pub struct SharedTensor<T> {
 	tensor: Tensor,
 	locations: RefCell<Vec<Location>>,
@@ -24,8 +52,8 @@ pub struct SharedTensor<T> {
 
 impl<T> SharedTensor<T> {
 
+	/// Create new `SharedTensor` by allocating memory for the context.
 	pub fn new<I>(shape: I) -> SharedTensor<T> where I: Into<Tensor> {
-
 		SharedTensor {
 			tensor: shape.into(),
 			locations: RefCell::new(vec![]),
@@ -50,12 +78,16 @@ impl<T> SharedTensor<T> {
 		}
 	}
 
-	pub fn resize<I>(&mut self, shape: I) where I: Into<Tensor> {
+	/// Change the size and shape of the Tensor.
+	pub fn replace<I>(&mut self, shape: I) where I: Into<Tensor> {
 		self.locations.borrow_mut().clear();
 		self.up_to_date.set(0);
 		self.tensor = shape.into();
 	}
 
+	// FIXME: synchronize memory elsewhere if possible?
+    /// Drops memory allocation on the specified device. Returns error if
+    /// no memory has been allocated on this device.
 	pub fn drop_context<C>(&mut self, context: &C) -> Result where C: Context {
 
 		match self.get_location_index(context) {
@@ -81,6 +113,20 @@ impl<T> SharedTensor<T> {
 		mem::size_of::<T>() * capacity
 	}
 
+	// Functions `read()`, `read_write()`, `write_only()` use `unsafe` to
+    // extend lifetime of retured reference to internally owned memory chunk.
+    // Borrow guarantees that SharedTensor outlives all of its Tensors, and
+    // there is only one mutable borrow. So we only need to make sure that
+    // memory locations won't be dropped or moved while there are live Tensors.
+    // It's quite easy to do: by convention we only allow to remove elements from
+    // `self.locations` in methods with `&mut self`. Since we store device's memory
+    // objects in a Box, reference to it won't change during Vec reallocations.
+
+    /// Get memory for reading for the specified `context`.
+    ///
+    /// ## Note
+    ///
+    /// Can fail if memory allocation fails or if tensor wasn't initialized yet.
 	pub fn read<'mem, C>(&'mem self, context: &C) -> Result<&'mem C::Memory> 
 		where C: Context
 	{
@@ -101,6 +147,8 @@ impl<T> SharedTensor<T> {
 		Ok(mem_mem_lifetime)
 	}
 
+	/// Get memory for reading and writing for the specified `context`.
+	/// Can fail if memory allocation fails, or if tensor wasn't initialized yet.
 	pub fn read_write<'mem, C>(&'mem self, context: &C) -> Result<&'mem mut C::Memory>
 		where C: Context
 	{
@@ -122,6 +170,14 @@ impl<T> SharedTensor<T> {
         Ok(mem_mem_lifetime)
 	}
 
+	/// Get memory for writing only.
+	///
+    /// This function skips synchronization and initialization checks, since
+    /// contents will be overwritten anyway. By convention caller must fully
+    /// initialize returned memory. Failure to do so may result in use of
+    /// uninitialized data later. If caller has failed to overwrite memory,
+    /// for some reason, it must call `invalidate()` to return vector to
+    /// uninitialized state.
 	pub fn write_only<'mem,  C>(&'mem mut self, context: &C) -> Result<&'mem C::Memory> 
 		where C: Context
 	{
@@ -141,6 +197,12 @@ impl<T> SharedTensor<T> {
 		Ok(mem_mem_lifetime)
 	}
 
+	// TODO: chose the best source to copy data from.
+    // That would require some additional traits that return costs for
+    // transferring data between different backends.
+    // Actually I think that there would be only transfers between
+    // `Native` <-> `Cuda` and `Native` <-> `OpenCL` in foreseeable future,
+    // so it's best to not over-engineer here.
 	fn sync_if_needed(&self, dst_i: usize) -> Result {
 		if self.up_to_date.get() & (1 << dst_i) != 0 {
 
@@ -151,6 +213,9 @@ impl<T> SharedTensor<T> {
 
     	assert!(src_i != BIT_MAP_SIZE);
 
+    	// We need to borrow two different Vec elements: src and mut dst.
+        // `Borrow` doesn't allow for that to be done in a straightforward way, so here is 
+        // workaround.
     	assert!(src_i != dst_i);
 
     	let mut locations = self.locations.borrow_mut();
@@ -167,6 +232,10 @@ impl<T> SharedTensor<T> {
     		(&right[0], &mut left[dst_i])
     	};
 
+    	// Backends may define transfers asymmetrically. E. g. CUDA may know how
+        // to transfer to and from Native backend, while Native may know nothing
+        // about CUDA at all. So if first attempt fails we change order and
+        // try again.
     	match src_loc.context._sync_out(src_loc.memory.deref(), dst_loc.context._as_any(), dst_loc.memory.as_mut()) {
     		Err(ref e) if e.kind() == ErrorKind::NoAvailableSynchronizationRouteFound => { },
 
@@ -195,6 +264,8 @@ impl<T> SharedTensor<T> {
 		None
 	}
 
+	/// Looks up `context` in `self.locations` and returns its index. If lookup fails then new 
+	/// location is created and its index is returned.
 	fn get_or_create_location_index<C>(&self, context: &C) -> Result<usize> where C: Context {
 
 		if let Some(i) = self.get_location_index(context) {
@@ -213,6 +284,11 @@ impl<T> SharedTensor<T> {
 		});
 
 		Ok(self.locations.borrow().len() - 1)
+	}
+
+	/// Returns the number of elements for which the Tensor has been allocated.
+	pub fn capacity(&self) -> usize {
+		self.ncomponents
 	}
 }
 

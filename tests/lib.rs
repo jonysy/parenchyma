@@ -32,7 +32,7 @@ mod tensor_spec {
 		let mut shared_tensor = SharedTensor::<f32>::new(vec![10, 20, 30]);
 		assert_eq!(shared_tensor.shape(), &[10, 20, 30]);
 
-		shared_tensor.resize(vec![2, 3, 4, 5]);
+		shared_tensor.replace(vec![2, 3, 4, 5]);
 		assert_eq!(shared_tensor.shape(), &[2, 3, 4, 5]);
 	}
 

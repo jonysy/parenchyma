@@ -1,5 +1,4 @@
 #![cfg(test)]
-#![feature(try_from)]
 
 extern crate parenchyma;
 extern crate parenchyma_native;
@@ -27,15 +26,14 @@ mod framework_spec {
 }
 
 mod shared_memory_spec {
-	use parenchyma::{Framework, SharedTensor};
+	use parenchyma::{Context, Framework, SharedTensor};
 	use parenchyma::error::ErrorKind;
 	use parenchyma_native::{Native, NativeContext};
-	use std::convert::TryFrom;
 
 	#[test]
 	fn it_creates_new_shared_memory_for_native() {
 		let native = Native::new();
-		let context = NativeContext::try_from(native.devices().to_vec()).unwrap();
+		let context = NativeContext::new(native.devices().to_vec()).unwrap();
 		let mut shared_data = SharedTensor::<f32>::new(vec![10]);
 		let data = shared_data.write_only(&context).unwrap().as_slice::<f32>();
 		assert_eq!(10, data.len());
@@ -44,7 +42,7 @@ mod shared_memory_spec {
 	#[test]
 	fn it_fails_on_initialized_memory_read() {
 		let native = Native::new();
-		let context = NativeContext::try_from(native.devices().to_vec()).unwrap();
+		let context = NativeContext::new(native.devices().to_vec()).unwrap();
 		let mut shared_data = SharedTensor::<f32>::new(vec![10]);
 
 		assert_eq!(shared_data.read(&context).unwrap_err().kind(), ErrorKind::UninitializedMemory);

@@ -11,6 +11,8 @@ pub struct Native {
 impl Framework for Native {
 	type Context = NativeContext;
 
+	const ID: &'static str = "NATIVE";
+
 	fn new() -> Native {
 		let device = NativeDevice {
 			id: 1,

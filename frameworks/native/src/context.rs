@@ -1,9 +1,8 @@
 use parenchyma::Context;
-use parenchyma::error::{Error, ErrorKind, Result};
+use parenchyma::error::{ErrorKind, Result};
 use std::any::Any;
-use std::convert::TryFrom;
 use std::hash::{Hash, Hasher};
-use super::{memory, NativeDevice, NativeMemory};
+use super::{memory, Native, NativeDevice, NativeMemory};
 
 #[derive(Clone)]
 pub struct NativeContext {
@@ -19,7 +18,13 @@ impl NativeContext {
 }
 
 impl Context for NativeContext {
+	type Framework = Native;
 	type Memory = NativeMemory;
+
+	fn new(devices: Vec<NativeDevice>) -> Result<Self> {
+		
+		Ok(NativeContext { devices: devices })
+	}
 
 	// anti-pattern?
 	fn allocate_memory(&self, size: usize) -> Result<NativeMemory> {
@@ -52,15 +57,6 @@ impl Context for NativeContext {
 		}
 
 		Err(ErrorKind::NoAvailableSynchronizationRouteFound.into())
-	}
-}
-
-impl TryFrom<Vec<NativeDevice>> for NativeContext {
-	type Err = Error;
-
-	fn try_from(devices: Vec<NativeDevice>) -> Result<Self> {
-		
-		Ok(NativeContext { devices: devices })
 	}
 }
 

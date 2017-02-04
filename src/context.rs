@@ -1,8 +1,17 @@
 use std::any::Any;
+use super::Device;
 use super::error::Result;
 
 pub trait Context: 'static + Clone + Eq + Sized {
+	/// The type of framework this context belongs to.
+	type Framework;
+	
+	/// The memory representation.
+	///
+	/// Memory is allocated by a device in a way that it is accessible for its computations.
 	type Memory: Any;
+
+	fn new(Vec<Device<Self::Framework>>) -> Result<Self>;
 
 	// anti-pattern?
 	fn allocate_memory(&self, size: usize) -> Result<Self::Memory>;
@@ -16,6 +25,7 @@ pub trait Context: 'static + Clone + Eq + Sized {
 	}
 }
 
+#[doc(hidden)]
 pub trait ObjectSafeContext {
 
 	// anti-pattern?

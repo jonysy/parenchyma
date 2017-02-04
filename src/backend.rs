@@ -1,5 +1,4 @@
-use std::convert::TryFrom;
-use super::{Device, Framework};
+use super::{Context, Device, Framework};
 use super::error::Result;
 
 /// `Backend` is the heart of Parenchyma. `Backend` provides the interface for running parallel 
@@ -12,12 +11,21 @@ use super::error::Result;
 /// A `Backend` provides you with the functionality of managing the memory of the devices and copying
 /// your objects from host to devices and the other way around. Additionally you can execute 
 /// operations in parallel through kernel functions on the device(s) of the `Backend`.
+///
+/// ## Architecture
+///
+/// TODO..
 pub struct Backend<F> where F: Framework {
+	/// A context, created from one or many devices, which are ready to execute kernel
+	/// methods and synchronize memory.
 	context: F::Context,
+	/// The Framework implementation such as OpenCL, CUDA, etc., which should be used and
+	/// determines which devices will be available and how parallel kernel functions can be
+	/// executed.
 	framework: F,
 }
 
-impl<F> Backend<F> where F: Framework {
+impl<F> Backend<F> where F: Framework, Backend<F>: BackendExtn<F> {
 
 	/// # Example
 	///
@@ -40,7 +48,7 @@ impl<F> Backend<F> where F: Framework {
 	/// ```
 	pub fn new(framework: F, selection: Vec<Device<F>>) -> Result<Backend<F>> {
 
-		let context = F::Context::try_from(selection)?;
+		let context = F::Context::new(selection)?;
 		let backend = Backend { framework: framework, context: context};
 
 		Ok(backend)
@@ -60,11 +68,22 @@ impl<F> Backend<F> where F: Framework {
 		Backend::new(framework, selection)
 	}
 
+	/// Returns the backend context.
 	pub fn context(&self) -> &F::Context {
 		&self.context
 	}
 
+	/// Returns the backend framework.
 	pub fn framework(&self) -> &F {
 		&self.framework
+	}
+}
+
+pub trait BackendExtn<F: Framework> {
+
+	/// Synchronize backend.
+	fn synchronize(&self) -> Result {
+
+		Ok(())
 	}
 }
