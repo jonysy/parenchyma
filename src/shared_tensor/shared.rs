@@ -18,22 +18,21 @@ const BIT_MAP_SIZE: usize = 64;
 /// Container that handles synchronization of `Memory` of type `T` and provides the functionality 
 /// for memory management across contexts.
 ///
-/// A tensor is a potentially multi-dimensional matrix containing information about the actual 
-/// data and its structure. A Parenchyma tensor tracks the memory copies of the numeric data of 
-/// a tensor across the context of the backend and manages:
+/// A tensor is essentially a generalization of vectors. A Parenchyma tensor tracks the memory 
+/// copies of the numeric data of a tensor across the context of the backend and manages:
 ///
 /// * the location of these memory copies
 /// * the location of the latest memory copy and
 /// * the synchronization of memory copies between contexts
 ///
-/// This is important, as this provides a unified data interface for executing tensor operations 
+/// This is important, as it provides a unified data interface for executing tensor operations 
 /// on CUDA, OpenCL and common host CPU.
 ///
 /// ## Terminology
 ///
-/// In Parenchyma, multidimensional Rust arrays represent tensors. A vector (a tensor with a 
-/// rank of 1) in an n-dimensional space is represented by a one-dimensional Rust array of 
-/// length n. Scalars (tensors with a rank of 0) are represented by numbers (e.g., `3`). An array of 
+/// In Parenchyma, multidimensional Rust arrays represent tensors. A vector, a tensor with a 
+/// rank of 1, in an n-dimensional space is represented by a one-dimensional Rust array of 
+/// length n. Scalars, tensors with a rank of 0, are represented by numbers (e.g., `3`). An array of 
 /// arrays, such as `[[1, 2, 3], [4, 5, 6]]`, represents a tensor with a rank of 2.
 ///
 /// ## Examples
