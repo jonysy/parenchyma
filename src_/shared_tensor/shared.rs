@@ -77,6 +77,11 @@ impl<T> SharedTensor<T> {
 		}
 	}
 
+	/// Returns the number of elements for which the tensor has been allocated.
+	pub fn capacity(&self) -> usize {
+		self.ncomponents
+	}
+
 	/// Change the size and shape of the Tensor.
 	pub fn replace<I>(&mut self, shape: I) where I: Into<Tensor> {
 		self.locations.borrow_mut().clear();
@@ -85,8 +90,8 @@ impl<T> SharedTensor<T> {
 	}
 
 	// FIXME: synchronize memory elsewhere if possible?
-    /// Drops memory allocation on the specified device. Returns error if
-    /// no memory has been allocated on this device.
+    /// Drops memory allocation on the specified context. Returns error if
+    /// no memory has been allocated on this context.
 	pub fn drop_context<C>(&mut self, context: &C) -> Result where C: Context {
 
 		match self.get_location_index(context) {
@@ -118,7 +123,7 @@ impl<T> SharedTensor<T> {
     // there is only one mutable borrow. So we only need to make sure that
     // memory locations won't be dropped or moved while there are live Tensors.
     // It's quite easy to do: by convention we only allow to remove elements from
-    // `self.locations` in methods with `&mut self`. Since we store device's memory
+    // `self.locations` in methods with `&mut self`. Since we store context's memory
     // objects in a Box, reference to it won't change during Vec reallocations.
 
     /// Get memory for reading for the specified `context`.
@@ -177,7 +182,7 @@ impl<T> SharedTensor<T> {
     /// uninitialized data later. If caller has failed to overwrite memory,
     /// for some reason, it must call `invalidate()` to return vector to
     /// uninitialized state.
-	pub fn write_only<'mem,  C>(&'mem mut self, context: &C) -> Result<&'mem C::Memory> 
+	pub fn write_only<'mem,  C>(&'mem mut self, context: &C) -> Result<&'mem mut C::Memory> 
 		where C: Context
 	{
 		let i = self.get_or_create_location_index(context)?;
@@ -283,11 +288,6 @@ impl<T> SharedTensor<T> {
 		});
 
 		Ok(self.locations.borrow().len() - 1)
-	}
-
-	/// Returns the number of elements for which the Tensor has been allocated.
-	pub fn capacity(&self) -> usize {
-		self.ncomponents
 	}
 }
 

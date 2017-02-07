@@ -1,4 +1,4 @@
-#![feature(associated_consts)]
+#![feature(associated_consts, pub_restricted)]
 #![cfg_attr(feature = "unstable_alloc", feature(alloc))]
 
 extern crate parenchyma;
@@ -11,7 +11,6 @@ pub use self::device::NativeDevice;
 pub use self::framework::Native;
 pub use self::memory::NativeMemory;
 
-mod backend;
 mod context;
 mod device;
 mod framework;

@@ -1,32 +1,56 @@
 use parenchyma::{Framework, Processor};
 use std::borrow::Cow;
-use std::marker::PhantomData;
-use super::{NativeContext, NativeDevice};
+use super::{NativeContext, NativeDevice, NativeMemory};
 
-#[derive(Clone)]
+/// Provides the native framework.
+///
+/// ```rust
+/// extern crate parenchyma;
+/// extern crate parenchyma_native;
+///
+/// use parenchyma::{Backend, Framework};
+/// use parenchyma_native::Native;
+// --- work around: https://github.com/rust-lang/cargo/issues/960
+///
+/// # fn main() {
+/// let framework = Native::new();
+/// let selection = framework.available_devices.clone();
+/// let backend = Backend::new(framework, selection).expect("failed to construct backend");
+/// # }
+/// ```
+#[derive(Clone, Debug)]
 pub struct Native {
-	devices: Vec<NativeDevice>,
+    pub available_devices: Vec<NativeDevice>,
 }
 
 impl Framework for Native {
-	type Context = NativeContext;
+    const FRAMEWORK_NAME: &'static str = "NATIVE";
 
-	const ID: &'static str = "NATIVE";
+    /// The context representation.
+    type Context = NativeContext;
 
-	fn new() -> Native {
-		let device = NativeDevice {
-			id: 1,
-			compute_units: Some(1),
-			name: Some(Cow::from("Host CPU")),
-			processor: Some(Processor::Cpu),
-			phantom: PhantomData,
-		};
+    /// The device representation.
+    type Device = NativeDevice;
 
-		Native { devices: vec![device] }
-	}
+    /// The memory representation.
+    type Memory = NativeMemory;
 
-	fn devices(&self) -> &[NativeDevice] {
+    /// Initializes a the framework.
+    fn new() -> Native {
+        let device = NativeDevice {
+            name: Cow::from("Host CPU"),
+            compute_units: 1,
+            processor: Processor::Cpu,
+        };
 
-		&self.devices
-	}
+        Native { available_devices: vec![device] }
+    }
+}
+
+impl Default for ::parenchyma::Backend<Native> {
+
+    fn default() -> Self {
+
+        unimplemented!()
+    }
 }

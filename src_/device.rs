@@ -2,8 +2,9 @@ use std::borrow::Cow;
 use std::marker::PhantomData;
 use super::Processor;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Device<F> {
+	//pub implementation_id: Option<isize>,
 	pub id: isize,
 	pub compute_units: Option<isize>,
 	pub name: Option<Cow<'static, str>>,

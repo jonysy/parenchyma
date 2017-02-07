@@ -1,4 +1,4 @@
-use super::Context;
+use super::{Context, Device};
 
 /// Base functionality for all frameworks.
 ///
@@ -10,23 +10,23 @@ use super::Context;
 /// `Framework` implementation, resulting in an initialized framework that contains a list of
 /// all available devices through that framework, as well as other things specific to the framework.
 pub trait Framework: Sized {
-    /// The name of the framework (e.g., `"OPEN_CL"`).
-    const FRAMEWORK_NAME: &'static str;
+	/// The `Context` representation for this framework.
+	type Context: Context<Framework = Self>;
 
-    /// The `Context` representation.
-    type Context: Context<Framework = Self>;
+	/// The device representation for this framework.
+	type Device: Device<Framework = Self>;
 
-    /// The device representation.
-    type Device;
+	/// The memory representation for this framework.
+	///
+	/// Memory is allocated by a device in a way that it is accessible for its computations.
+	type Memory: Memory<Framework = Self>;
 
-    /// The memory representation.
-    ///
-    /// Memory is allocated by a device in a way that it is accessible for its computations.
-    type Memory;
+	/// The name of the framework (e.g., `"OPEN_CL"`).
+	const ID: &'static str;
 
-    /// Initializes a new framework.
-    fn new() -> Self;
+	/// Initializes a new framework.
+	fn new() -> Self;
 
-    // /// Returns the cached and available devices.
-    // fn devices(&self) -> &[Self::Device];
+	/// Returns the cached and available devices.
+	fn devices(&self) -> &[Device<Self>];
 }

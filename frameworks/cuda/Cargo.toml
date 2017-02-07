@@ -1,13 +1,8 @@
 [package]
-name = "parenchyma-opencl"
+name = "parenchyma-cuda"
 version = "0.1.0"
 authors = ["Jony <jonysy@users.noreply.github.com>"]
 license = "MIT/Apache-2.0"
-
-[dependencies]
-cl-sys = "0.2.1"
-ocl = "0.12.0"
-ocl-core = "0.3.2"
 
 [dependencies.parenchyma]
 path = "../../"

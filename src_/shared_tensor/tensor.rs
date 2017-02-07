@@ -18,15 +18,15 @@ pub struct Tensor {
 	///
 	/// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 	/// ```
-	pub(super) ncomponents: usize,
+	pub(super) capacity: usize,
 	/// The dimensions of the tensor.
 	pub(super) shape: Vec<usize>,
 }
 
 impl Tensor {
 
-	pub fn ncomponents(&self) -> usize {
-		self.ncomponents
+	pub fn capacity(&self) -> usize {
+		self.capacity
 	}
 
 	pub fn shape(&self) -> &[usize] {
@@ -94,11 +94,11 @@ impl<I> From<I> for Tensor where I: Into<Vec<usize>> {
 		let shape = shape.into();
 
 		let rank = shape.len();
-		let ncomponents = shape.iter().fold(1, |s, &a| s * a);
+		let capacity = shape.iter().fold(1, |s, &a| s * a);
 
 		Tensor {
 			rank: rank,
-			ncomponents: ncomponents,
+			capacity: capacity,
 			shape: shape,
 		}
 	}

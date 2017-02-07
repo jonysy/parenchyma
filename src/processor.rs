@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 
 /// The available processors.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Processor {
+	Accelerator,
 	Cpu,
 	Gpu,
-	Accelerator,
 	Other(Cow<'static, str>),
 }

@@ -1,4 +1,9 @@
-use parenchyma::Device;
-use super::Native;
+use parenchyma::Processor;
+use std::borrow::Cow;
 
-pub type NativeDevice = Device<Native>;
+#[derive(Clone, Debug)]
+pub struct NativeDevice {
+	pub(super) name: Cow<'static, str>,
+	pub(super) compute_units: isize,
+	pub(super) processor: Processor,
+}
