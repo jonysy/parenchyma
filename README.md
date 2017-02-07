@@ -7,7 +7,7 @@ extensible HPC framework developed by the [Autumn team] as well as an amazing gr
 of [contributors][collenchyma-contributors]. Aside from the name and design, the two libraries are 
 almost completely different (e.g., auto-sync thanks to [@alexandermorozov](/../../issues/2)). 
 Therefore, before migrating over, one should go through the documentation carefully as to not make 
-the mistake of misusing the framework. Not doing so may result in unintended behavior, for 
+the mistake of misusing the framework. Not doing so may result in unintended behavior for 
 which Parenchyma devs/contributors are not responsible.
 
 ## Usage
