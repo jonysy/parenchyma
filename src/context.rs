@@ -1,26 +1,24 @@
 use std::any::{Any, TypeId};
 use std::hash::Hash;
-use super::{Framework/*, Memory*/};
-use super::error::Result;
 
-pub type Memory = Any;
+use error::{Error, Result};
+use super::Framework;
 
 pub trait Context: Eq + Hash + PartialEq + Sized {
-    /// The device representation.
-    type D;
-
-    /// The memory representation.
-    ///
-    /// Memory is allocated by a device in a way that it is accessible for its computations.
-    type M;
+    /// The framework associated with this context.
+    type F: Framework<Context = Self>;
 
     /// Constructs a context from a selection of devices.
     ///
-    /// Context construction takes a list of devices.
-    fn new(devices: Vec<Self::D>) -> Result<Self>;
+    /// # Arguments
+    ///
+    /// * `devices` - takes a list of devices.
+    fn new(devices: Vec<<Self::F as Framework>::D>) 
+        -> Result<Self, <Self::F as Framework>::E>;
 
     /// Allocates memory
-    fn allocate_memory(&self, size: usize) -> Result<Self::M>;
+    fn allocate_memory(&self, size: usize) 
+        -> Result<<Self::F as Framework>::M, <Self::F as Framework>::E>;
 
     // fn sync_in(
     //  &self, 
@@ -42,15 +40,15 @@ pub trait Context: Eq + Hash + PartialEq + Sized {
 
 pub(super) enum Synch<'s> {
     In {
-        memory: &'s mut Memory, 
+        memory: &'s mut Any, 
         source_context: &'s ContextView, 
-        source_memory: &'s Memory 
+        source_memory: &'s Any 
     },
 
     Out { 
-        memory: &'s Memory, 
+        memory: &'s Any, 
         source_context: &'s ContextView, 
-        source_memory: &'s mut Memory 
+        source_memory: &'s mut Any 
     },
 }
 
@@ -63,16 +61,17 @@ pub(super) enum Synch<'s> {
 /// * [RFC 546](https://github.com/rust-lang/rfcs/blob/master/text/0546-Self-not-sized-by-default.md)
 pub(super) trait ContextView: Any {
 
-    fn alloc(&self, size: usize) -> Result<Box<Memory>>;
+    fn alloc(&self, size: usize) -> Result<Box<Any>>;
 
     fn synchronize(&self, synch: Synch) -> Result;
 }
 
 impl<V> ContextView for V where V: 'static + Context {
 
-    fn alloc(&self, size: usize) -> Result<Box<Memory>> {
+    fn alloc(&self, size: usize) -> Result<Box<Any>> {
 
-        Context::allocate_memory(self, size).map(|m| Box::new(m) as Box<Memory>)
+        let box_memory = |m| Box::new(m) as Box<Any>;
+        Context::allocate_memory(self, size).map(box_memory).map_err(Error::from_framework::<V::F>)
     }
 
     fn synchronize(&self, synch: Synch) -> Result {

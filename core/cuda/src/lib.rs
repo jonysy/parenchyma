@@ -4,4 +4,4 @@ extern crate cuda_sys;
 
 pub mod api;
 pub mod error;
-pub use self::api::{CudaAttribute, CudaContextFlag, CudaContextHandle, CudaDriver, CudaDeviceHandle};
+pub use self::api::{driver, Attribute, ContextFlag, ContextHandle, DeviceHandle};

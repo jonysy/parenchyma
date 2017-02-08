@@ -2,7 +2,7 @@ use std::{error, fmt, result};
 use super::Framework;
 
 /// A specialized `Result` type.
-pub type Result<T = ()> = result::Result<T, Error>;
+pub type Result<T = (), E = Error> = result::Result<T, E>;
 
 #[derive(Debug)]
 pub struct Error {
@@ -77,6 +77,13 @@ impl Error {
         Self::_new(kind.into(), Some(payload.into()))
     }
 
+    pub fn from_framework<F>(error: F::E) -> Error where F: Framework {
+
+        let kind = ErrorKind::Framework { name: F::FRAMEWORK_NAME };
+
+        Self::_new(kind, Some(Box::new(error)))
+    }
+
     // "De-generization" technique..
     fn _new(kind: ErrorKind, payload: Option<Box<error::Error + Send + Sync>>) -> Error {
 
@@ -130,17 +137,6 @@ impl error::Error for Error {
                 None
             }
         }
-    }
-}
-
-pub trait FrameworkSpecificError: 'static + error::Error + Send + Sync { type F: Framework; }
-
-impl<E> From<E> for Error
-    where E: FrameworkSpecificError
-{
-    fn from(e: E) -> Self {
-
-        Error::new(ErrorKind::Framework { name: E::F::name() }, e)
     }
 }
 

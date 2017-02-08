@@ -1,14 +1,14 @@
 use super::{cl, core};
-use super::Device;
+use super::OpenCLDevice;
 
 #[derive(Debug)]
-pub struct Platform {
+pub struct OpenCLPlatform {
     id: core::PlatformId,
     pub name: String,
-    pub available_devices: Vec<Device>,
+    pub available_devices: Vec<OpenCLDevice>,
 }
 
-impl<'p> From<&'p cl::Platform> for Platform {
+impl<'p> From<&'p cl::Platform> for OpenCLPlatform {
 
     fn from(cl_platform: &cl::Platform) -> Self {
 
@@ -19,7 +19,7 @@ impl<'p> From<&'p cl::Platform> for Platform {
             list.unwrap().iter().map(From::from).collect()
         };
 
-        Platform {
+        OpenCLPlatform {
             id: id,
             name: name,
             available_devices: available_devices,

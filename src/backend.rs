@@ -1,5 +1,5 @@
 use super::{Context, Framework};
-use super::error::Result;
+use super::error::{Error, Result};
 
 /// `Backend` is the heart of Parenchyma. `Backend` provides the interface for running parallel 
 /// computations on one ore many devices.
@@ -26,7 +26,7 @@ pub struct Backend<F> where F: Framework {
     framework: F,
 }
 
-impl<F> Backend<F> where F: Framework {//, Backend<F>: BackendExtn<F> {
+impl<F> Backend<F> where F: Framework {
 
     /// # Example
     ///
@@ -49,16 +49,16 @@ impl<F> Backend<F> where F: Framework {//, Backend<F>: BackendExtn<F> {
     /// ```
     pub fn new(framework: F, selection: Vec<F::D>) -> Result<Self> {
 
-        let context = F::Context::new(selection)?;
+        let context = F::Context::new(selection).map_err(Error::from_framework::<F>)?;
         let backend = Backend { framework: framework, context: context};
 
         Ok(backend)
     }
 
     pub fn default(framework: F) -> Result<Self> {
-        let framework = F::new()?;
-        let default_selection = framework.default_selection()?;
-        let context = F::Context::new(default_selection)?;
+        let framework = F::new().map_err(Error::from_framework::<F>)?;
+        let default_selection = framework.default_selection();
+        let context = F::Context::new(default_selection).map_err(Error::from_framework::<F>)?;
         let backend = Backend { framework: framework, context: context};
         Ok(backend)
     }

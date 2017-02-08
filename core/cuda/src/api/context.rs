@@ -3,9 +3,9 @@ use error::{Error, ErrorKind, Result};
 use std::mem;
 
 #[derive(Debug)]
-pub struct CudaContextHandle(pub(super) cuda_sys::CUcontext);
+pub struct ContextHandle(pub(super) cuda_sys::CUcontext);
 
-impl CudaContextHandle {
+impl ContextHandle {
 
     /// Destroy a CUDA Context. <sup>*</sup>There's no need to manually call this method __unless 
     /// you know what you're doing__. `destroy` is automatically called when the context goes
@@ -23,7 +23,7 @@ impl CudaContextHandle {
     }
 }
 
-impl Drop for CudaContextHandle {
+impl Drop for ContextHandle {
 
     fn drop(&mut self) {
 

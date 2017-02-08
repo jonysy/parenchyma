@@ -1,21 +1,20 @@
-use cuda::{self, CudaContextHandle, CudaDriver};
-use parenchyma;
-use parenchyma::error::Result;
+use cuda::{driver, ContextHandle};
+use parenchyma::Context;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
-pub use super::{Cuda, Device, Memory};
+pub use super::{Cuda, CudaDevice, CudaError, CudaMemory};
 
 #[derive(Debug)]
-pub struct Context {
-    id: Rc<CudaContextHandle>,
-    selected_devices: Vec<Device>,
+pub struct CudaContext {
+    id: Rc<ContextHandle>,
+    selected_devices: Vec<CudaDevice>,
 }
 
-impl parenchyma::Context for Context {
-    type Framework = Cuda;
+impl Context for CudaContext {
+    type F = Cuda;
 
     /// Creates a new CUDA context for computation.
-    fn new(devices: Vec<Device>) -> Result<Self> {
+    fn new(devices: Vec<CudaDevice>) -> Result<Self, CudaError> {
 
         let len = devices.len();
 
@@ -37,25 +36,25 @@ impl parenchyma::Context for Context {
     }
 
     /// Allocates memory
-    fn allocate_memory(&self, size: usize) -> Result<Memory> {
+    fn allocate_memory(&self, _: usize) -> Result<CudaMemory, CudaError> {
 
         unimplemented!()
     }
 }
 
-impl PartialEq for Context {
+impl PartialEq for CudaContext {
 
-    fn eq(&self, other: &Self) -> bool {
+    fn eq(&self, _: &Self) -> bool {
 
         unimplemented!()
     }
 }
 
-impl Eq for Context { }
+impl Eq for CudaContext { }
 
-impl Hash for Context {
+impl Hash for CudaContext {
 
-    fn hash<H>(&self, state: &mut H) where H: Hasher {
+    fn hash<H>(&self, _: &mut H) where H: Hasher {
         
         unimplemented!()
     }

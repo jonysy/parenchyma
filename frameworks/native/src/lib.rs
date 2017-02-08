@@ -8,12 +8,10 @@ extern crate alloc;
 
 pub use self::context::NativeContext;
 pub use self::device::NativeDevice;
-pub use self::error::NativeError;
 pub use self::framework::Native;
 pub use self::memory::NativeMemory;
 
 mod context;
 mod device;
-mod error;
 mod framework;
 mod memory;

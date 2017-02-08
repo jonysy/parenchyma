@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use super::{cl, core};
 
 #[derive(Clone, Debug)]
-pub struct Device {
+pub struct OpenCLDevice {
     pub(super) id: core::DeviceId,
     /// maximum compute units
     pub compute_units: u32,
@@ -15,7 +15,7 @@ pub struct Device {
     pub processor: Processor,
 }
 
-impl<'d> From<&'d cl::Device> for Device {
+impl<'d> From<&'d cl::Device> for OpenCLDevice {
 
     fn from(cl_device: &cl::Device) -> Self {
 
@@ -54,7 +54,7 @@ impl<'d> From<&'d cl::Device> for Device {
             }
         };
 
-        Device {
+        OpenCLDevice {
             id: id,
             compute_units: compute_units,
             name: name,

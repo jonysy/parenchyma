@@ -7,15 +7,17 @@ extern crate ocl as cl;
 extern crate ocl_core as core;
 extern crate parenchyma;
 
-pub use self::context::Context;
-pub use self::device::Device;
+pub use self::context::OpenCLContext;
+pub use self::device::OpenCLDevice;
+pub use self::error::OpenCLError;
 pub use self::framework::OpenCL;
-pub use self::memory::Memory;
-pub use self::platform::Platform;
-pub use self::queue::Queue;
+pub use self::memory::OpenCLMemory;
+pub use self::platform::OpenCLPlatform;
+pub use self::queue::OpenCLQueue;
 
 mod context;
 mod device;
+mod error;
 mod framework;
 mod memory;
 mod platform;

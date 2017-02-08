@@ -1,2 +1,2 @@
 #[derive(Debug)]
-pub struct Queue;
+pub struct OpenCLQueue;

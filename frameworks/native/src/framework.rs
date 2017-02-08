@@ -1,6 +1,6 @@
 use parenchyma::{Framework, Processor};
-use std::borrow::Cow;
-use super::{NativeContext, NativeDevice, NativeError};
+use parenchyma::error::{Error, Result};
+use super::{NativeContext, NativeDevice, NativeMemory};
 
 /// Provides the native framework.
 ///
@@ -30,19 +30,21 @@ impl Framework for Native {
 
     type D = NativeDevice;
 
-    type E = NativeError;
+    type E = Error;
 
-    fn new() -> Result<Self, Self::E> {
+    type M = NativeMemory;
+
+    fn new() -> Result<Self> {
         Ok(Native { 
             available_devices: vec![NativeDevice {
-                name: Cow::from("Host CPU"),
+                name: "Host CPU",
                 compute_units: 1,
                 processor: Processor::Cpu,
             }]
         })
     }
 
-    fn default_selection(&self) -> Result<Vec<Self::D>, Self::E> {
-        Ok(self.available_devices.clone())
+    fn default_selection(&self) -> Vec<NativeDevice> {
+        self.available_devices.clone()
     }
 }

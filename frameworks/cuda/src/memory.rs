@@ -1,2 +1,2 @@
 /// CUDA memory
-pub struct Memory;
+pub struct CudaMemory;

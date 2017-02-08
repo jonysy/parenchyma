@@ -1,4 +1,4 @@
-use super::error::FrameworkSpecificError as Error;
+use std::error::Error;
 use super::Context;
 
 /// Base functionality for all frameworks.
@@ -17,20 +17,22 @@ pub trait Framework: Sized {
     const FRAMEWORK_NAME: &'static str;
 
     /// The context representation.
-    type Context: Context<D = Self::D>;
+    type Context: Context<F = Self>;
 
     /// The device representation.
     type D;
 
     /// An error type associated with the framework.
-    type E: Error<F = Self>;
+    type E: 'static + Error + Send + Sync;
+
+    /// The memory representation.
+    ///
+    /// Memory is allocated by a device in a way that it is accessible for its computations.
+    type M;
 
     /// Initializes a new framework.
     fn new() -> Result<Self, Self::E>;
 
     /// Returns a default selection of devices for the framework.
-    fn default_selection(&self) -> Result<Vec<Self::D>, Self::E>;
-
-    #[doc(hidden)]
-    fn name() -> &'static str { /* /rust-lang/rust#29924 */ Self::FRAMEWORK_NAME }
+    fn default_selection(&self) -> Vec<Self::D>;
 }

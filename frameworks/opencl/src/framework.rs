@@ -1,6 +1,6 @@
+use cl;
 use parenchyma::Framework;
-use super::cl;
-use super::{Context, Device, Memory, Platform};
+use super::{OpenCLContext, OpenCLDevice, OpenCLError, OpenCLMemory, OpenCLPlatform};
 
 /// Provides the OpenCL framework.
 ///
@@ -21,7 +21,7 @@ use super::{Context, Device, Memory, Platform};
 #[derive(Debug)]
 pub struct OpenCL {
     /// List of available platforms.
-    pub available_platforms: Vec<Platform>,
+    pub available_platforms: Vec<OpenCLPlatform>,
 }
 
 impl Framework for OpenCL {
@@ -29,20 +29,26 @@ impl Framework for OpenCL {
     const FRAMEWORK_NAME: &'static str = "OPEN_CL";
 
     /// The context representation.
-    type Context = Context;
+    type Context = OpenCLContext;
 
     /// The device representation.
-    type Device = Device;
+    type D = OpenCLDevice;
+
+    /// An error type associated with the framework.
+    type E = OpenCLError;
 
     /// The memory representation.
-    type Memory = Memory;
+    type M = OpenCLMemory;
 
     /// Initializes the framework.
-    fn new() -> OpenCL {
+    fn new() -> Result<Self, OpenCLError> {
         let available_platforms = cl::Platform::list().iter().map(From::from).collect();
 
-        OpenCL {
-            available_platforms: available_platforms,
-        }
+        Ok(OpenCL { available_platforms: available_platforms })
+    }
+
+    /// Returns a default selection of devices for the framework.
+    fn default_selection(&self) -> Vec<Self::D> {
+        self.available_platforms[0].available_devices.clone()
     }
 }

@@ -1,7 +1,7 @@
 use parenchyma::Context;
 use parenchyma::error::Result;
 use std::hash::{Hash, Hasher};
-use super::{NativeDevice, NativeMemory};
+use super::{Native, NativeDevice, NativeMemory};
 
 #[derive(Clone, Debug)]
 pub struct NativeContext {
@@ -9,15 +9,14 @@ pub struct NativeContext {
 }
 
 impl Context for NativeContext {
-    type D = NativeDevice;
-    type M = NativeMemory;
+    type F = Native;
 
-    fn new(devices: Vec<Self::D>) -> Result<Self> {
+    fn new(devices: Vec<NativeDevice>) -> Result<Self> {
         
         Ok(NativeContext { selected_devices: devices })
     }
 
-    fn allocate_memory(&self, size: usize) -> Result<Self::M> {
+    fn allocate_memory(&self, size: usize) -> Result<NativeMemory> {
         let memory = NativeMemory::allocate(size);
         Ok(memory)
     }

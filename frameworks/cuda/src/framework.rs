@@ -1,61 +1,55 @@
-use cuda::CudaDriver;
+use cuda::driver;
 use cuda::error::{Error, ErrorKind};
 use parenchyma::{Framework, Processor};
-use super::{Context, Device, Memory};
+use super::{CudaContext, CudaDevice, CudaError, CudaMemory};
 
 pub struct Cuda {
-    devices: Vec<Device>,
+    available_devices: Vec<CudaDevice>,
 }
 
 impl Framework for Cuda {
     /// The name of the framework.
     const FRAMEWORK_NAME: &'static str = "CUDA";
 
-    // type Err = 
-
     /// The context representation.
-    type Context = Context;
+    type Context = CudaContext;
 
     /// The device representation.
-    type Device = Device;
+    type D = CudaDevice;
+
+    type E = CudaError;
 
     /// The memory representation.
-    type Memory = Memory;
+    type M = CudaMemory;
 
     /// Initializes the framework.
-    fn new() -> Cuda {
-        let cuda = || -> Result<Cuda, Error> {
-            let _ = CudaDriver::init()?;
+    fn new() -> Result<Cuda, CudaError> {
+        let _ = driver::init()?;
+        let ndevices = driver::ndevices()?;
 
-            let ndevices = CudaDriver::ndevices()?;
-
-            if ndevices == 0 {
-                return Err(ErrorKind::NoDevice.into());
-            }
-
-            let mut devices = vec![];
-
-            for n in 0..ndevices {
-                let dev = CudaDriver::device(n)?;
-
-                let name = dev.name()?;
-
-                devices.push(Device {
-                    name: dev.name()?,
-                    multiprocessors: dev.multiprocessor_count()?,
-                    processor: Processor::Gpu,
-                    handle: dev,
-                });
-            }
-
-            Ok(Cuda {
-                devices: devices,
-            })
-        };
-
-        match cuda() {
-            Ok(cuda) => cuda,
-            Err(error) => panic!("{}", error)
+        if ndevices == 0 {
+            return Err((ErrorKind::NoDevice.into(): Error).into());
         }
+
+        let mut devices = Vec::with_capacity(ndevices as usize);
+
+        let range = (0..ndevices);
+
+        for n in range {
+            let h = driver::device(n as u32)?;
+
+            devices.push(CudaDevice {
+                name: h.name()?,
+                multiprocessors: h.multiprocessor_count()?,
+                processor: Processor::Gpu,
+                handle: h,
+            });
+        }
+
+        Ok(Cuda { available_devices: devices })
+    }
+
+    fn default_selection(&self) -> Vec<CudaDevice> {
+        vec![self.available_devices[0].clone()]
     }
 }
