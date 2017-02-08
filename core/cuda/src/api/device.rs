@@ -3,6 +3,7 @@ use error::{Error, ErrorKind, Result};
 use std::ffi::CString;
 use super::CudaAttribute;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CudaDeviceHandle(pub(super) i32);
 
 impl CudaDeviceHandle {

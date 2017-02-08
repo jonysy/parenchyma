@@ -28,7 +28,7 @@ impl Framework for OpenCL {
     /// The name of the framework.
     const FRAMEWORK_NAME: &'static str = "OPEN_CL";
 
-    /// The `Context` representation.
+    /// The context representation.
     type Context = Context;
 
     /// The device representation.
@@ -37,7 +37,7 @@ impl Framework for OpenCL {
     /// The memory representation.
     type Memory = Memory;
 
-    /// Initializes a the framework.
+    /// Initializes the framework.
     fn new() -> OpenCL {
         let available_platforms = cl::Platform::list().iter().map(From::from).collect();
 

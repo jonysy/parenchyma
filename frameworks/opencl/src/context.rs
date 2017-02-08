@@ -1,6 +1,6 @@
+use {cl, core, parenchyma};
 use parenchyma::error::Result;
 use std::hash::{Hash, Hasher};
-use super::{cl, core, parenchyma};
 use super::{Device, Memory, OpenCL, Queue};
 
 #[derive(Debug)]
@@ -10,22 +10,6 @@ pub struct Context {
     platform_id: core::PlatformId,
     selected_devices: Vec<Device>,
     queue: Option<Queue>,
-}
-
-impl PartialEq for Context {
-
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
-
-impl Eq for Context { }
-
-impl Hash for Context {
-
-    fn hash<H>(&self, state: &mut H) where H: Hasher {
-        (unsafe { self.id.as_ptr() as isize }).hash(state);
-    }
 }
 
 impl parenchyma::Context for Context {
@@ -44,7 +28,7 @@ impl parenchyma::Context for Context {
         // > automatically. Clone, store, and share between threads to your heart's content.
         let cl_context = cl::builders::ContextBuilder::new().devices(&selected).build().unwrap();
 
-        let id = cl_context.core_as_ref().clone();
+        let id = cl_context.core_as_ref().clone(); // TODO `into_core` method
         let platform_id = *cl_context.platform().unwrap().as_core();
 
         let context = Context {
@@ -61,5 +45,21 @@ impl parenchyma::Context for Context {
     fn allocate_memory(&self, size: usize) -> Result<Memory> {
 
         unimplemented!()
+    }
+}
+
+impl PartialEq for Context {
+
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for Context { }
+
+impl Hash for Context {
+
+    fn hash<H>(&self, state: &mut H) where H: Hasher {
+        (unsafe { self.id.as_ptr() as isize }).hash(state);
     }
 }

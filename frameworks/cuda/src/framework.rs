@@ -1,24 +1,56 @@
 use cuda::CudaDriver;
-use cuda::error::Error;
-use super::Device;
+use cuda::error::{Error, ErrorKind};
+use parenchyma::{Framework, Processor};
+use super::{Context, Device, Memory};
 
 pub struct Cuda {
     devices: Vec<Device>,
 }
 
-impl /*Framework for*/ Cuda {
+impl Framework for Cuda {
+    /// The name of the framework.
+    const FRAMEWORK_NAME: &'static str = "CUDA";
 
-    pub fn new() -> Cuda {
+    // type Err = 
+
+    /// The context representation.
+    type Context = Context;
+
+    /// The device representation.
+    type Device = Device;
+
+    /// The memory representation.
+    type Memory = Memory;
+
+    /// Initializes the framework.
+    fn new() -> Cuda {
         let cuda = || -> Result<Cuda, Error> {
-            let driver = CudaDriver::init()?;
+            let _ = CudaDriver::init()?;
 
-            for n in 0..driver.ndevices()? {
-                let dev = driver.device(n)?;
+            let ndevices = CudaDriver::ndevices()?;
 
-                let name = dev.name()?;
+            if ndevices == 0 {
+                return Err(ErrorKind::NoDevice.into());
             }
 
-            unimplemented!()
+            let mut devices = vec![];
+
+            for n in 0..ndevices {
+                let dev = CudaDriver::device(n)?;
+
+                let name = dev.name()?;
+
+                devices.push(Device {
+                    name: dev.name()?,
+                    multiprocessors: dev.multiprocessor_count()?,
+                    processor: Processor::Gpu,
+                    handle: dev,
+                });
+            }
+
+            Ok(Cuda {
+                devices: devices,
+            })
         };
 
         match cuda() {

@@ -1,6 +1,7 @@
 use cuda_sys;
 use error::{Error, ErrorKind, Result};
-use super::CudaDeviceHandle;
+use std::ptr;
+use super::{CudaContextFlag, CudaContextHandle, CudaDeviceHandle};
 
 #[derive(Debug)]
 pub struct CudaDriver;
@@ -42,7 +43,7 @@ impl CudaDriver {
     ///
     /// Returns the number of devices with compute capability greater than or equal to 1.0 that 
     /// are available for execution. If there is no such device, returns 0.
-    pub fn ndevices(&self) -> Result<u32> {
+    pub fn ndevices() -> Result<u32> {
         let mut ndevices = 0;
 
         unsafe {
@@ -61,7 +62,7 @@ impl CudaDriver {
     /// # Parameters
     ///
     /// * `ordinal` - Device number to get handle for.
-    pub fn device(&self, n: u32) -> Result<CudaDeviceHandle> {
+    pub fn device(n: u32) -> Result<CudaDeviceHandle> {
 
         let mut device_handle: i32 = 0;
 
@@ -72,6 +73,25 @@ impl CudaDriver {
 
                 e @ _ => 
                     Err(Error::from(e.into(): ErrorKind))
+            }
+        }
+    }
+
+    /// Create a CUDA context.
+    ///
+    /// # Parameters
+    ///
+    /// * `f` - Context creation flags
+    pub fn create_context(f: CudaContextFlag, dev: CudaDeviceHandle) -> Result<CudaContextHandle> {
+        unsafe {
+            let mut ctx = ptr::null_mut();
+
+            match cuda_sys::cuCtxCreate_v2(&mut ctx, f as u32, dev.0) {
+                cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+                    Ok(CudaContextHandle(ctx)),
+
+                e @ _ =>
+                    Err(Error::from(e.into(): ErrorKind)),
             }
         }
     }
