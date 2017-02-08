@@ -1,6 +1,6 @@
 use parenchyma::{Framework, Processor};
 use std::borrow::Cow;
-use super::{NativeContext, NativeDevice, NativeMemory};
+use super::{NativeContext, NativeDevice, NativeError};
 
 /// Provides the native framework.
 ///
@@ -26,31 +26,23 @@ pub struct Native {
 impl Framework for Native {
     const FRAMEWORK_NAME: &'static str = "NATIVE";
 
-    /// The context representation.
     type Context = NativeContext;
 
-    /// The device representation.
-    type Device = NativeDevice;
+    type D = NativeDevice;
 
-    /// The memory representation.
-    type Memory = NativeMemory;
+    type E = NativeError;
 
-    /// Initializes a the framework.
-    fn new() -> Native {
-        let device = NativeDevice {
-            name: Cow::from("Host CPU"),
-            compute_units: 1,
-            processor: Processor::Cpu,
-        };
-
-        Native { available_devices: vec![device] }
+    fn new() -> Result<Self, Self::E> {
+        Ok(Native { 
+            available_devices: vec![NativeDevice {
+                name: Cow::from("Host CPU"),
+                compute_units: 1,
+                processor: Processor::Cpu,
+            }]
+        })
     }
-}
 
-impl Default for ::parenchyma::Backend<Native> {
-
-    fn default() -> Self {
-
-        unimplemented!()
+    fn default_selection(&self) -> Result<Vec<Self::D>, Self::E> {
+        Ok(self.available_devices.clone())
     }
 }

@@ -6,16 +6,21 @@ use super::error::Result;
 pub type Memory = Any;
 
 pub trait Context: Eq + Hash + PartialEq + Sized {
-    /// The framework this context is associated with.
-    type Framework: Framework<Context = Self>;
+    /// The device representation.
+    type D;
+
+    /// The memory representation.
+    ///
+    /// Memory is allocated by a device in a way that it is accessible for its computations.
+    type M;
 
     /// Constructs a context from a selection of devices.
     ///
     /// Context construction takes a list of devices.
-    fn new(devices: Vec<<Self::Framework as Framework>::Device>) -> Result<Self>;
+    fn new(devices: Vec<Self::D>) -> Result<Self>;
 
     /// Allocates memory
-    fn allocate_memory(&self, size: usize) -> Result<<Self::Framework as Framework>::Memory>;
+    fn allocate_memory(&self, size: usize) -> Result<Self::M>;
 
     // fn sync_in(
     //  &self, 
@@ -36,8 +41,17 @@ pub trait Context: Eq + Hash + PartialEq + Sized {
 // ==============
 
 pub(super) enum Synch<'s> {
-    In { memory: &'s mut Memory, source_context: &'s ContextView, source_memory: &'s Memory },
-    Out { memory: &'s Memory, source_context: &'s ContextView, source_memory: &'s mut Memory },
+    In {
+        memory: &'s mut Memory, 
+        source_context: &'s ContextView, 
+        source_memory: &'s Memory 
+    },
+
+    Out { 
+        memory: &'s Memory, 
+        source_context: &'s ContextView, 
+        source_memory: &'s mut Memory 
+    },
 }
 
 /// An object-safe version of `Context`.

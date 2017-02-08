@@ -1,4 +1,5 @@
 use std::{error, fmt, result};
+use super::Framework;
 
 /// A specialized `Result` type.
 pub type Result<T = ()> = result::Result<T, Error>;
@@ -129,6 +130,17 @@ impl error::Error for Error {
                 None
             }
         }
+    }
+}
+
+pub trait FrameworkSpecificError: 'static + error::Error + Send + Sync { type F: Framework; }
+
+impl<E> From<E> for Error
+    where E: FrameworkSpecificError
+{
+    fn from(e: E) -> Self {
+
+        Error::new(ErrorKind::Framework { name: E::F::name() }, e)
     }
 }
 

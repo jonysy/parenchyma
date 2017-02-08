@@ -47,11 +47,19 @@ impl<F> Backend<F> where F: Framework {//, Backend<F>: BackendExtn<F> {
     /// // Create a ready to go `Backend` from the framework.
     /// let backend = Backend::new(framework, selection).expect("Something went wrong!");
     /// ```
-    pub fn new(framework: F, selection: Vec<F::Device>) -> Result<Self> {
+    pub fn new(framework: F, selection: Vec<F::D>) -> Result<Self> {
 
         let context = F::Context::new(selection)?;
         let backend = Backend { framework: framework, context: context};
 
+        Ok(backend)
+    }
+
+    pub fn default(framework: F) -> Result<Self> {
+        let framework = F::new()?;
+        let default_selection = framework.default_selection()?;
+        let context = F::Context::new(default_selection)?;
+        let backend = Backend { framework: framework, context: context};
         Ok(backend)
     }
 

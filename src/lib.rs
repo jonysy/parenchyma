@@ -53,6 +53,7 @@
 //! [Autumn]: https://github.com/autumnai
 //! [Leaf]: https://github.com/autumnai/leaf
 
+#![allow(warnings)]
 #![feature(associated_consts, get_type_id, pub_restricted)]
 
 pub mod error;
@@ -67,5 +68,4 @@ mod context;
 mod backend;
 mod framework;
 mod processor;
-// mod shared_tensor;
 mod tensor;

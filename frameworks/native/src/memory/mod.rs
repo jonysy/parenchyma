@@ -18,6 +18,11 @@ pub struct NativeMemory {
 }
 
 impl NativeMemory {
+    pub fn allocate(size: usize) -> Self {
+        let bx: Box<[u8]> = allocate_boxed_slice(size);
+        NativeMemory::from(bx)
+    }
+
     /// Access memory as a slice.
     pub fn as_slice<T>(&self) -> &[T] {
 
