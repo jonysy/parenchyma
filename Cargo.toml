@@ -7,4 +7,7 @@ categories = []
 license = "MIT/Apache-2.0"
 
 [workspace]
-members = ["./frameworks/cuda", "./frameworks/native", "./frameworks/opencl"]
+members = [
+    "./core/cuda", "./core/cuda-sys",
+    "./frameworks/cuda", "./frameworks/native", "./frameworks/opencl"
+]

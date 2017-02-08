@@ -10,11 +10,15 @@ use super::Context;
 /// `Framework` implementation, resulting in an initialized framework that contains a list of
 /// all available devices through that framework, as well as other things specific to the framework.
 pub trait Framework: Sized {
-    /// The name of the framework (e.g., `"OPEN_CL"`).
+    /// The name of the framework.
+    ///
+    /// Convention: <sup>*</sup> Use uppercase letters (e.g., `"OPEN_CL"`).
     const FRAMEWORK_NAME: &'static str;
 
     /// The `Context` representation.
     type Context: Context<Framework = Self>;
+
+    // type Bundle: Bundle<Framework = Self>;
 
     /// The device representation.
     type Device;

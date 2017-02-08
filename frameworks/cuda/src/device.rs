@@ -1,7 +1,7 @@
-use super::api::{core, sys};
+use parenchyma::Processor;
 
 #[derive(Clone, Debug)]
 pub struct Device {
-    //id: core::DeviceId,
-
+    // id: core::DeviceId,
+    pub processor: Processor,
 }

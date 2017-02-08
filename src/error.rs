@@ -37,7 +37,7 @@ pub enum ErrorKind {
 
 impl ErrorKind {
 
-    pub(super) fn as_str(&self) -> &'static str {
+    fn as_str(&self) -> &'static str {
 
         use self::ErrorKind::*;
 
