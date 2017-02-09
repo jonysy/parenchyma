@@ -23,12 +23,10 @@ parenchyma-native = "0.1.0"
 extern crate parenchyma;
 extern crate parenchyma_native;
 
-use parenchyma::{Backend, BackendExt};
+use parenchyma::Backend;
 use parenchyma_native::Native;
 
-fn main() {
-	let backend: Backend<Native> = Backend::default().expect("something went wrong!");
-}
+let backend: Backend<Native> = Backend::default()?;
 ```
 
 ## License
