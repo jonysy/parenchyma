@@ -1,14 +1,16 @@
 [package]
-name = "parenchyma-native"
+name = "parenchyma-opencl"
 version = "0.1.0"
 authors = ["Jony <jonysy@users.noreply.github.com>"]
 keywords = ["backend", "computation", "hpc"]
 categories = []
 license = "MIT/Apache-2.0"
 
+[dependencies]
+cl-sys = "0.2.1"
+ocl = "0.12.0"
+ocl-core = "0.3.2"
+
 [dependencies.parenchyma]
 path = "../../"
 version = "0.1.0"
-
-[features]
-unstable_alloc = [] # faster but unstable memory allocation on native machines

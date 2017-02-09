@@ -2,13 +2,27 @@ use {cl, core, parenchyma};
 use std::hash::{Hash, Hasher};
 use super::{OpenCLDevice, OpenCLError, OpenCLMemory, OpenCL, OpenCLQueue};
 
+// notes:
+// shared context if more than one device is passed in
+
+/// A context is responsible for managing OpenCL objects and resources.
+///
+/// Contexts are used by the OpenCL runtime for managing objects such as command-queues,
+/// memory, program and kernel objects and for executing kernels on one or more devices
+/// specified in the context. A single context for multiple devices, a single context for a 
+/// single device, and a context for each device are all possible.
+///
+/// Memory objects can be copied to host memory, from host memory, or to other memory objects.
+/// Copying from the host to a device is considered _writing_. Copying from a device to the host is
+/// considered _reading_.
 #[derive(Debug)]
 pub struct OpenCLContext {
     id: core::Context,
     /// <sup>*</sup>Multi-platforms contexts are not supported in OpenCL.
     platform_id: core::PlatformId,
     selected_devices: Vec<OpenCLDevice>,
-    queue: Option<OpenCLQueue>,
+    /// A queue is used by the host application to submit work to a device.
+    queues: Vec<OpenCLQueue>,
 }
 
 impl parenchyma::Context for OpenCLContext {
@@ -16,10 +30,6 @@ impl parenchyma::Context for OpenCLContext {
     type F = OpenCL;
 
     /// Constructs a context from a selection of devices.
-    ///
-    /// Contexts are used by the OpenCL runtime for managing objects such as command-queues,
-    /// memory, program and kernel objects and for executing kernels on one or more devices
-    /// specified in the context.
     fn new(devices: Vec<OpenCLDevice>) -> Result<Self, OpenCLError> {
 
         let selected = cl::Device::list_from_core(devices.iter().map(|d| d.id).collect());
@@ -28,6 +38,12 @@ impl parenchyma::Context for OpenCLContext {
         // > automatically. Clone, store, and share between threads to your heart's content.
         let cl_context = cl::builders::ContextBuilder::new().devices(&selected).build().unwrap();
 
+        let mut queues = Vec::with_capacity(devices.len());
+
+        for device in devices.iter() {
+            let queue = cl::Queue::new(&cl_context, cl::Device::list_from_core(vec![device.id])[0]);
+        }
+
         let id = cl_context.core_as_ref().clone(); // TODO `into_core` method
         let platform_id = *cl_context.platform().unwrap().as_core();
 
@@ -35,7 +51,7 @@ impl parenchyma::Context for OpenCLContext {
             id: id,
             platform_id: platform_id,
             selected_devices: devices,
-            queue: None,
+            queues: queues,
         };
 
         Ok(context)

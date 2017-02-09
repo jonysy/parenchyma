@@ -1,6 +1,11 @@
 use super::{cl, core};
 use super::OpenCLDevice;
 
+/// A platform specifies the OpenCL implementation.
+///
+/// <sup>*</sup>note: Multiple platforms can exist on a single machine. Targeting multiple platforms
+/// is fine as long as contexts do not cross - meaning, one context per platform is required. In 
+/// other words, an OpenCL context can only encapsulate devices from a single platform.
 #[derive(Debug)]
 pub struct OpenCLPlatform {
     id: core::PlatformId,

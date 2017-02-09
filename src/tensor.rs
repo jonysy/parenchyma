@@ -2,9 +2,11 @@ use std::mem;
 use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
-use super::{Context, ContextView};
+use super::context::{Context, ContextView};
 use super::error::{ErrorKind, Result};
 
+/// A shared tensor for memory management.
+///
 /// Container that handles synchronization of `Memory` of type `T` and provides the functionality 
 /// for memory management across contexts.
 ///

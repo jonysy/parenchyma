@@ -41,7 +41,7 @@
 //!
 //! ## Example
 //!
-//! ```rust
+//! ```rust,ignore
 //! // TODO..
 //! ```
 //!
@@ -54,18 +54,23 @@
 //! [Leaf]: https://github.com/autumnai/leaf
 
 #![allow(warnings)]
+#![cfg_attr(feature = "unstable_alloc", feature(alloc))]
 #![feature(associated_consts, get_type_id, pub_restricted)]
+
+#[cfg(feature = "unstable_alloc")]
+extern crate alloc;
 
 pub mod error;
 pub use self::context::Context;
-pub(self) use self::context::{ContextView, Synch};
-pub use self::backend::{Backend, BackendExtn};
+pub use self::backend::Backend;
 pub use self::framework::Framework;
+pub use self::native::{Native, NativeContext, NativeDevice, NativeMemory};
 pub use self::processor::Processor;
-// pub use self::shared_tensor::{SharedTensor, Tensor};
+pub use self::tensor::Tensor;
 
 mod context;
 mod backend;
 mod framework;
+mod native;
 mod processor;
 mod tensor;

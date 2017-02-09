@@ -30,22 +30,18 @@ impl<F> Backend<F> where F: Framework {
 
     /// # Example
     ///
-    /// ```rust,ignore
-    /// extern crate parenchyma;
-    /// extern crate parenchyma_native;
-    ///
-    /// use parenchyma::{Backend, Framework};
-    /// use parenchyma_native::Native;
+    /// ```rust
+    /// use parenchyma::{Backend, Framework, Native};
     ///
     /// 
     /// // Construct a new framework.
-    /// let framework = Native::new();
+    /// let framework = Native::new().expect("failed to initialize framework");
     ///
     /// // Available devices can be obtained through the framework.
-    /// let selection = framework.devices().to_vec();
+    /// let selection = framework.available_devices.clone();
     ///
     /// // Create a ready to go `Backend` from the framework.
-    /// let backend = Backend::new(framework, selection).expect("Something went wrong!");
+    /// let backend = Backend::new(framework, selection).expect("failed to construct backend");
     /// ```
     pub fn new(framework: F, selection: Vec<F::D>) -> Result<Self> {
 
@@ -55,7 +51,14 @@ impl<F> Backend<F> where F: Framework {
         Ok(backend)
     }
 
-    pub fn default(framework: F) -> Result<Self> {
+    /// # Example
+    ///
+    /// ```rust
+    /// use parenchyma::{Backend, Native};
+    ///
+    /// let backend: Backend<Native> = Backend::default().expect("Something went wrong!");
+    /// ```
+    pub fn default() -> Result<Self> {
         let framework = F::new().map_err(Error::from_framework::<F>)?;
         let default_selection = framework.default_selection();
         let context = F::Context::new(default_selection).map_err(Error::from_framework::<F>)?;
@@ -71,24 +74,5 @@ impl<F> Backend<F> where F: Framework {
     /// Returns the backend framework.
     pub fn framework(&self) -> &F {
         &self.framework
-    }
-}
-
-pub trait BackendExtn<F: Framework> {
-
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// use parenchyma::Backend;
-    /// use parenchyma_native::Native;
-    ///
-    /// let backend = Backend::<Native>::default().expect("Something went wrong!");
-    /// ```
-    fn default() -> Result<Backend<F>>;
-
-    /// Synchronize backend.
-    fn synchronize(&self) -> Result {
-
-        Ok(())
     }
 }

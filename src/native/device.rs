@@ -1,4 +1,4 @@
-use parenchyma::Processor;
+use super::super::Processor;
 
 #[derive(Clone, Debug)]
 pub struct NativeDevice {

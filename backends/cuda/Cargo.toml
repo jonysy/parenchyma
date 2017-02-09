@@ -1,0 +1,15 @@
+[package]
+name = "parenchyma-cuda"
+version = "0.1.0"
+authors = ["Jony <jonysy@users.noreply.github.com>"]
+keywords = ["backend", "computation", "hpc"]
+categories = []
+license = "MIT/Apache-2.0"
+
+[dependencies.cuda]
+path = "../../frameworks/cuda"
+version = "0.1.0"
+
+[dependencies.parenchyma]
+path = "../../"
+version = "0.1.0"

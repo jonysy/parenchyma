@@ -38,6 +38,11 @@ impl Framework for OpenCL {
     type E = OpenCLError;
 
     /// The memory representation.
+    ///
+    /// Memory objects are OpenCL data that can be moved on and off devices and can be classified as:
+    ///
+    /// * Buffers - Contiguous chunks of memory (arrays, pointers, structs). read/write capable
+    /// * Images - Opaque 2D or 3D objects. Can either read or written in a kernel, but not both
     type M = OpenCLMemory;
 
     /// Initializes the framework.
