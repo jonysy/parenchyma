@@ -66,11 +66,11 @@ pub use self::backend::Backend;
 pub use self::framework::Framework;
 pub use self::native::{Native, NativeContext, NativeDevice, NativeMemory};
 pub use self::processor::Processor;
-pub use self::tensor::Tensor;
+pub use self::shared::Tensor;
 
 mod context;
 mod backend;
 mod framework;
 mod native;
 mod processor;
-mod tensor;
+mod shared;

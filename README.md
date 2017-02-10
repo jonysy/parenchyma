@@ -26,7 +26,7 @@ extern crate parenchyma_native;
 use parenchyma::Backend;
 use parenchyma_native::Native;
 
-let backend: Backend<Native> = Backend::default()?;
+let backend: Backend<Native> = Backend::default().expect("something went wrong!");
 ```
 
 ## License

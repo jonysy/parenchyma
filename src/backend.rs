@@ -17,13 +17,13 @@ use super::error::{Error, Result};
 /// TODO..
 #[derive(Debug)]
 pub struct Backend<F> where F: Framework {
-    /// A context, created from one or many devices, which are ready to execute kernel
-    /// methods and synchronize memory.
-    context: F::Context,
     /// The Framework implementation such as OpenCL, CUDA, etc., which should be used and
     /// determines which devices will be available and how parallel kernel functions can be
     /// executed.
     framework: F,
+    /// A context, created from one or many devices, which are ready to execute kernel
+    /// methods and synchronize memory.
+    context: F::Context,
 }
 
 impl<F> Backend<F> where F: Framework {
@@ -56,14 +56,12 @@ impl<F> Backend<F> where F: Framework {
     /// ```rust
     /// use parenchyma::{Backend, Native};
     ///
-    /// let backend: Backend<Native> = Backend::default().expect("Something went wrong!");
+    /// let backend: Backend<Native> = Backend::default().expect("something went wrong!");
     /// ```
     pub fn default() -> Result<Self> {
         let framework = F::new().map_err(Error::from_framework::<F>)?;
         let default_selection = framework.default_selection();
-        let context = F::Context::new(default_selection).map_err(Error::from_framework::<F>)?;
-        let backend = Backend { framework: framework, context: context};
-        Ok(backend)
+        Self::new(framework, default_selection)
     }
 
     /// Returns the backend context.

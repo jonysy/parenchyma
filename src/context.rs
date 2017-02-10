@@ -3,8 +3,9 @@ use std::hash::Hash;
 
 use error::{Error, ErrorKind, Result};
 use super::{NativeContext, NativeMemory, Framework};
+use super::shared::Location;
 
-pub trait Context: Eq + Hash + PartialEq + Sized {
+pub trait Context: 'static + Clone + Eq + Hash + PartialEq + Sized {
     /// The framework associated with this context.
     type F: Framework<Context = Self>;
 
@@ -37,9 +38,17 @@ pub trait Context: Eq + Hash + PartialEq + Sized {
 
 #[doc(hidden)]
 pub enum Action<'s> {
-    Write { memory: &'s mut Any, source_context: &'s ContextView, source_memory: &'s Any },
+    Write {
+        memory: &'s mut Any, 
+        source_context: &'s ContextView, 
+        source_memory: &'s Any 
+    },
 
-    Read { memory: &'s Any,  destn_context: &'s ContextView,  destn_memory: &'s mut Any },
+    Read { 
+        memory: &'s Any,  
+        destn_context: &'s ContextView,  
+        destn_memory: &'s mut Any 
+    },
 }
 
 /// An object-safe version of `Context`.
