@@ -1,8 +1,8 @@
 #![allow(dead_code, non_camel_case_types, non_upper_case_globals)]
 #![feature(libc)]
 
-// #[macro_use]
-// extern crate enum_primitive;
+#[macro_use]
+extern crate enum_primitive;
 
 extern crate libc;
 
@@ -88,6 +88,7 @@ pub struct cl_buffer_region {
 }
 
 
+enum_from_primitive! {
 /// OpenCL error codes.
 #[derive(PartialEq, Debug)]
 #[repr(C)]
@@ -143,6 +144,15 @@ pub enum CLStatus {
     CL_INVALID_GLOBAL_WORK_SIZE = -63,
     CL_INVALID_PROPERTY = -64,
     CL_PLATFORM_NOT_FOUND_KHR = -1001,
+}
+}
+
+impl CLStatus {
+
+    pub fn new(n: i32) -> Option<Self> {
+        use enum_primitive::FromPrimitive;
+        Self::from_i32(n)
+    }
 }
 
 impl fmt::Display for CLStatus {

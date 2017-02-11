@@ -50,6 +50,7 @@ impl Framework for OpenCL {
         let mut platform_ptrs = opencl::api::platform_ids()?;
         let capacity = platform_ptrs.len();
         let mut available_platforms = Vec::with_capacity(capacity);
+        
         for _ in 0..capacity {
 
             let ptr = platform_ptrs.remove(0);

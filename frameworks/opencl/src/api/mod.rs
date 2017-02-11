@@ -1,6 +1,8 @@
+pub use self::context::ContextPtr;
 pub use self::device::DevicePtr;
 pub use self::platform::PlatformPtr;
 
+mod context;
 mod device;
 mod platform;
 

@@ -1,3 +1,4 @@
+use opencl::api::ContextPtr;
 use parenchyma::{Context, NativeContext, NativeMemory};
 use std::hash::{Hash, Hasher};
 use super::{OpenCLDevice, OpenCLError, OpenCLMemory, OpenCL, OpenCLQueue};
@@ -17,7 +18,7 @@ use super::{OpenCLDevice, OpenCLError, OpenCLMemory, OpenCL, OpenCLQueue};
 /// considered _reading_.
 #[derive(Clone, Debug)]
 pub struct OpenCLContext {
-    //id: core::Context,
+    ptr: ContextPtr,
     /// <sup>*</sup>Multi-platforms contexts are not supported in OpenCL.
     // platform_id: core::PlatformId,
     selected_devices: Vec<OpenCLDevice>,
@@ -36,35 +37,17 @@ impl Context for OpenCLContext {
 
         match ndevices {
             0 => unimplemented!(),
-            1 => {
-                unimplemented!()
+            1 | 2 => {
+                let device_ptrs = &vec![devices[0].ptr.clone()];
+                let ptr = ContextPtr::new(&device_ptrs)?;
+
+                Ok(OpenCLContext {
+                    ptr: ptr,
+                    selected_devices: devices,
+                })
             },
             _ => unimplemented!(),
         }
-
-        // let selected = cl::Device::list_from_core(devices.iter().map(|d| d.id).collect());
-
-        // // > Thread safety and destruction for any enclosed pointers are all handled 
-        // // > automatically. Clone, store, and share between threads to your heart's content.
-        // let cl_context = cl::builders::ContextBuilder::new().devices(&selected).build().unwrap();
-
-        // let mut queues = Vec::with_capacity(devices.len());
-
-        // for device in devices.iter() {
-        //     let queue = cl::Queue::new(&cl_context, cl::Device::list_from_core(vec![device.id])[0]);
-        // }
-
-        // let id = cl_context.core_as_ref().clone(); // TODO `into_core` method
-        // let platform_id = *cl_context.platform().unwrap().as_core();
-
-        // let context = OpenCLContext {
-        //     id: id,
-        //     platform_id: platform_id,
-        //     selected_devices: devices,
-        //     queues: queues,
-        // };
-
-        // Ok(context)
     }
 
     /// Allocates memory

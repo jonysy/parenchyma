@@ -5,7 +5,7 @@ use super::OpenCLError;
 
 #[derive(Clone, Debug)]
 pub struct OpenCLDevice {
-    ptr: opencl::api::DevicePtr,
+    pub(super) ptr: opencl::api::DevicePtr,
     /// maximum compute units
     pub compute_units: u32,
     /// The name of the device
