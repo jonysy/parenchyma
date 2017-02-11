@@ -13,8 +13,8 @@ use super::{OpenCLContext, OpenCLDevice, OpenCLError, OpenCLMemory, OpenCLPlatfo
 // --- work around: https://github.com/rust-lang/cargo/issues/960
 ///
 /// # fn main() {
-/// let framework = OpenCL::new();
-/// let selection = framework.available_platforms[0].available_devices.clone();
+/// let framework = OpenCL::new().expect("failed to construct framework");
+/// let selection = framework.available_platforms[0].available_devices[0].clone();
 /// let backend = Backend::new(framework, selection).expect("failed to construct backend");
 /// # }
 /// ```

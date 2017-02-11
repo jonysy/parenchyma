@@ -96,3 +96,11 @@ impl Drop for ContextPtr {
         self.release().unwrap()
     }
 }
+
+impl PartialEq<ContextPtr> for ContextPtr {
+
+    fn eq(&self, other: &ContextPtr) -> bool {
+
+        self.0 == other.0
+    }
+}

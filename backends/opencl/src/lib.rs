@@ -34,7 +34,7 @@ extern crate parenchyma;
 
 pub use self::context::OpenCLContext;
 pub use self::device::OpenCLDevice;
-pub use self::error::OpenCLError;
+pub use self::error::{OpenCLError, Result};
 pub use self::event::OpenCLEvent;
 pub use self::framework::OpenCL;
 pub use self::memory::OpenCLMemory;

@@ -1,7 +1,6 @@
-#![cfg(test)]
-
 extern crate parenchyma;
 
+#[cfg(test)]
 mod backend_spec {
     use parenchyma::{Backend, Native};
 
@@ -12,6 +11,7 @@ mod backend_spec {
     }
 }
 
+#[cfg(test)]
 mod framework_spec {
     use parenchyma::{Framework, Native};
 
@@ -22,6 +22,7 @@ mod framework_spec {
     }
 }
 
+#[cfg(test)]
 mod shared_memory_spec {
     use parenchyma::{Context, Framework, Native, NativeContext, Tensor};
     use parenchyma::error::ErrorKind;

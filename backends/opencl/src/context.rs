@@ -1,7 +1,9 @@
-use opencl::api::{ContextPtr, QueuePtr};
+use opencl::{ContextPtr, MemoryObject, QueuePtr};
+use opencl::enqueue;
 use parenchyma::{Context, NativeContext, NativeMemory};
 use std::hash::{Hash, Hasher};
-use super::{OpenCLDevice, OpenCLError, OpenCLMemory, OpenCL, OpenCLQueue};
+
+use super::{OpenCLDevice, OpenCLError, OpenCLMemory, OpenCL, OpenCLQueue, Result};
 
 // notes:
 // shared context if more than one device is passed in
@@ -29,7 +31,7 @@ impl Context for OpenCLContext {
     type F = OpenCL;
 
     /// Constructs a context from a selection of devices.
-    fn new(device: OpenCLDevice) -> Result<Self, OpenCLError> {
+    fn new(device: OpenCLDevice) -> Result<Self> {
 
         let device_ptr_vec = &vec![device.ptr.clone()];
         let ptr = ContextPtr::new(&device_ptr_vec)?;
@@ -39,36 +41,47 @@ impl Context for OpenCLContext {
     }
 
     /// Allocates memory
-    fn allocate_memory(&self, _: usize) -> Result<OpenCLMemory, OpenCLError> {
+    fn allocate_memory(&self, size: usize) -> Result<OpenCLMemory> {
 
-        unimplemented!()
+        let mem_obj = MemoryObject::create_buffer(&self.ptr, size)?;
+
+        Ok(OpenCLMemory { obj: mem_obj })
     }
 
-    fn synch_in(&self, _: &mut OpenCLMemory, _: &NativeContext, _: &NativeMemory) -> Result<(), OpenCLError> {
+    fn synch_in(&self, destn: &mut OpenCLMemory, _: &NativeContext, src: &NativeMemory) -> Result {
 
-        unimplemented!()
+        let s_size = src.size();
+        let s_ptr = src.as_slice().as_ptr();
+
+        let _ = enqueue::write_buffer(&self.queue.ptr, &destn.obj, true, 0, s_size, s_ptr, &[])?;
+
+        Ok(())
     }
 
-    fn synch_out(&self, _: &OpenCLMemory, _: &NativeContext, _: &mut NativeMemory) -> Result<(), OpenCLError> {
+    fn synch_out(&self, src: &OpenCLMemory, _: &NativeContext, destn: &mut NativeMemory) -> Result {
 
-        unimplemented!()
+        let d_size = destn.size();
+        let d_ptr = destn.as_mut_slice().as_mut_ptr();
+
+        let _ = enqueue::read_buffer(&self.queue.ptr, &src.obj, true, 0, d_size, d_ptr, &[])?;
+
+        Ok(())
     }
 }
 
 impl PartialEq for OpenCLContext {
 
     fn eq(&self, other: &Self) -> bool {
-        //self.id == other.id
-        unimplemented!()
+        self.ptr == other.ptr
     }
 }
 
 impl Eq for OpenCLContext { }
 
-impl Hash for OpenCLContext {
+// impl Hash for OpenCLContext {
 
-    fn hash<H>(&self, state: &mut H) where H: Hasher {
-        // (unsafe { self.id.as_ptr() as isize }).hash(state);
-        unimplemented!()
-    }
-}
+//     fn hash<H>(&self, state: &mut H) where H: Hasher {
+//         // (unsafe { self.id.as_ptr() as isize }).hash(state);
+//         unimplemented!()
+//     }
+// }

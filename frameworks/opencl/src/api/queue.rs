@@ -3,7 +3,7 @@ use error::{ErrorKind, Result};
 use super::{ContextPtr, DevicePtr};
 
 #[derive(Debug)]
-pub struct QueuePtr(opencl_sys::cl_command_queue);
+pub struct QueuePtr(pub(super) opencl_sys::cl_command_queue);
 
 impl QueuePtr {
 

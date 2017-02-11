@@ -35,7 +35,7 @@ use super::super::error::{Error, ErrorKind, Result};
 /// ```rust
 /// // TODO..
 /// ```
-pub struct Tensor<T = f64> {
+pub struct Tensor<T> {
     /// The total number of indices.
     ///
     /// # Example

@@ -5,7 +5,7 @@ use error::{Error, ErrorKind, Result};
 use super::{NativeContext, NativeMemory, Framework};
 use super::shared::Location;
 
-pub trait Context: 'static + Clone + Eq + Hash + PartialEq + Sized {
+pub trait Context: 'static + Clone + Eq + PartialEq + Sized {
     /// The framework associated with this context.
     type F: Framework<Context = Self>;
 

@@ -40,6 +40,11 @@ impl NativeMemory {
             slice::from_raw_parts_mut(self.raw as *mut T, self.len / mem::size_of::<T>())
         }
     }
+
+    /// Returns memory size of the `FlatBox` (`NativeMemory`).
+    pub fn size(&self) -> usize {
+        self.len
+    }
 }
 
 impl From<Box<[u8]>> for NativeMemory {

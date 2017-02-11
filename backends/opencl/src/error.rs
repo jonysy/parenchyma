@@ -1,5 +1,7 @@
 use opencl;
-use std::{error, fmt};
+use std::{error, fmt, result};
+
+pub type Result<T = ()> = result::Result<T, OpenCLError>;
 
 #[derive(Debug)]
 pub struct OpenCLError;
@@ -8,7 +10,7 @@ impl fmt::Display for OpenCLError {
 
     fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
 
-        unimplemented!()
+        panic!("write!")
     }
 }
 
@@ -24,6 +26,6 @@ impl From<opencl::error::Error> for OpenCLError {
 
     fn from(e: opencl::error::Error) -> OpenCLError {
 
-        unimplemented!()
+        panic!("error!")
     }
 }
