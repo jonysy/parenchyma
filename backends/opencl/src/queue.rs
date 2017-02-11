@@ -1,3 +1,7 @@
+use opencl;
+
+// A queue is used by the host application to submit work to a device.
+
 /// A command queue
 ///
 /// A command queue is the mechanism for interaction with the device. The queue is used for 
@@ -16,5 +20,7 @@
 ///
 /// - In-order
 /// - Out-of-order
-#[derive(Debug)]
-pub struct OpenCLQueue;
+#[derive(Clone, Debug)]
+pub struct OpenCLQueue {
+    pub(super) ptr: opencl::api::QueuePtr,
+}

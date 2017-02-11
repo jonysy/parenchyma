@@ -1,10 +1,11 @@
-use opencl::api::ContextPtr;
+use opencl::api::{ContextPtr, QueuePtr};
 use parenchyma::{Context, NativeContext, NativeMemory};
 use std::hash::{Hash, Hasher};
 use super::{OpenCLDevice, OpenCLError, OpenCLMemory, OpenCL, OpenCLQueue};
 
 // notes:
 // shared context if more than one device is passed in
+// Multi-platforms contexts are not supported in OpenCL.
 
 /// A context is responsible for managing OpenCL objects and resources.
 ///
@@ -19,11 +20,8 @@ use super::{OpenCLDevice, OpenCLError, OpenCLMemory, OpenCL, OpenCLQueue};
 #[derive(Clone, Debug)]
 pub struct OpenCLContext {
     ptr: ContextPtr,
-    /// <sup>*</sup>Multi-platforms contexts are not supported in OpenCL.
-    // platform_id: core::PlatformId,
-    selected_devices: Vec<OpenCLDevice>,
-    // /// A queue is used by the host application to submit work to a device.
-    // queues: Vec<OpenCLQueue>,
+    selected_device: OpenCLDevice,
+    queue: OpenCLQueue,
 }
 
 impl Context for OpenCLContext {
@@ -31,23 +29,13 @@ impl Context for OpenCLContext {
     type F = OpenCL;
 
     /// Constructs a context from a selection of devices.
-    fn new(devices: Vec<OpenCLDevice>) -> Result<Self, OpenCLError> {
+    fn new(device: OpenCLDevice) -> Result<Self, OpenCLError> {
 
-        let ndevices = devices.len();
+        let device_ptr_vec = &vec![device.ptr.clone()];
+        let ptr = ContextPtr::new(&device_ptr_vec)?;
+        let queue = OpenCLQueue { ptr: QueuePtr::new(&ptr, &device.ptr, 0)? };
 
-        match ndevices {
-            0 => unimplemented!(),
-            1 | 2 => {
-                let device_ptrs = &vec![devices[0].ptr.clone()];
-                let ptr = ContextPtr::new(&device_ptrs)?;
-
-                Ok(OpenCLContext {
-                    ptr: ptr,
-                    selected_devices: devices,
-                })
-            },
-            _ => unimplemented!(),
-        }
+        Ok(OpenCLContext { ptr: ptr, selected_device: device, queue: queue })
     }
 
     /// Allocates memory

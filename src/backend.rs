@@ -43,7 +43,7 @@ impl<F> Backend<F> where F: Framework {
     /// // Create a ready to go `Backend` from the framework.
     /// let backend = Backend::new(framework, selection).expect("failed to construct backend");
     /// ```
-    pub fn new(framework: F, selection: Vec<F::D>) -> Result<Self> {
+    pub fn new(framework: F, selection: F::D) -> Result<Self> {
 
         let context = F::Context::new(selection).map_err(Error::from_framework::<F>)?;
         let backend = Backend { framework: framework, context: context};
@@ -60,7 +60,7 @@ impl<F> Backend<F> where F: Framework {
     /// ```
     pub fn default() -> Result<Self> {
         let framework = F::new().map_err(Error::from_framework::<F>)?;
-        let default_selection = framework.default_selection();
+        let default_selection = framework.default_selection().remove(0);
         Self::new(framework, default_selection)
     }
 

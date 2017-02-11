@@ -14,7 +14,7 @@ pub trait Context: 'static + Clone + Eq + Hash + PartialEq + Sized {
     /// # Arguments
     ///
     /// * `devices` - takes a list of devices.
-    fn new(devices: Vec<<Self::F as Framework>::D>) 
+    fn new(devices: <Self::F as Framework>::D) 
         -> Result<Self, <Self::F as Framework>::E>;
 
     /// Allocates memory

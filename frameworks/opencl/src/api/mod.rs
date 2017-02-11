@@ -1,10 +1,14 @@
 pub use self::context::ContextPtr;
 pub use self::device::DevicePtr;
+pub use self::memory::MemoryPtr;
 pub use self::platform::PlatformPtr;
+pub use self::queue::QueuePtr;
 
 mod context;
 mod device;
+mod memory;
 mod platform;
+mod queue;
 
 use opencl_sys;
 use std::ptr;

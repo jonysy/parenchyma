@@ -6,19 +6,9 @@ use error::{ErrorKind, Result};
 use super::DevicePtr;
 
 #[derive(Debug)]
-pub struct ContextPtr(opencl_sys::cl_context);
+pub struct ContextPtr(pub(super) opencl_sys::cl_context);
 
 impl ContextPtr {
-
-    // clCreateContext(
-    //     properties: *const cl_context_properties,
-    //     num_devices: cl_uint,
-    //     devices: *const cl_device_id,
-    //     pfn_notify: extern fn (*const libc::c_char, *const raw::c_void, libc::size_t, *mut raw::c_void),
-    //     user_data: *mut raw::c_void,
-    //     errcode_ret: *mut cl_int
-    // ) -> cl_context;
-
     /// Creates an OpenCL context.
     ///
     /// An OpenCL context is created with one or more devices. Contexts are used by the OpenCL 
@@ -103,8 +93,6 @@ impl Drop for ContextPtr {
 
     fn drop(&mut self) {
 
-        if let Err(e) = self.release() {
-            panic!("{}", e);
-        }
+        self.release().unwrap()
     }
 }

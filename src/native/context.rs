@@ -5,13 +5,13 @@ use super::{Native, NativeDevice, NativeMemory};
 
 #[derive(Clone, Debug)]
 pub struct NativeContext {
-    selected_devices: Vec<NativeDevice>,
+    selected_devices: NativeDevice,
 }
 
 impl Context for NativeContext {
     type F = Native;
 
-    fn new(devices: Vec<NativeDevice>) -> Result<Self> {
+    fn new(devices: NativeDevice) -> Result<Self> {
         
         Ok(NativeContext { selected_devices: devices })
     }
