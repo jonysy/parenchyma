@@ -24,15 +24,12 @@
 //! - Execute
 //! - Transfer results back
 //! - Free memory on devices
-//!
-//! * [Specification](https://www.khronos.org/registry/OpenCL/specs/opencl-1.2.pdf)
-//! * [Reference Card](https://www.khronos.org/files/opencl-1-1-quick-reference-card.pdf)
 
+#![allow(warnings)]
 #![feature(associated_consts, pub_restricted)]
 
-extern crate cl_sys as sys;
-extern crate ocl as cl;
-extern crate ocl_core as core;
+extern crate opencl;
+extern crate opencl_sys;
 extern crate parenchyma;
 
 pub use self::context::OpenCLContext;

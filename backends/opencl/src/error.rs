@@ -1,3 +1,4 @@
+use opencl;
 use std::{error, fmt};
 
 #[derive(Debug)]
@@ -14,6 +15,14 @@ impl fmt::Display for OpenCLError {
 impl error::Error for OpenCLError {
 
     fn description(&self) -> &str {
+
+        unimplemented!()
+    }
+}
+
+impl From<opencl::error::Error> for OpenCLError {
+
+    fn from(e: opencl::error::Error) -> OpenCLError {
 
         unimplemented!()
     }

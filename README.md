@@ -1,7 +1,6 @@
 # parenchyma
 
 [![Join the chat](https://badges.gitter.im/lychee-eng/parenchyma.svg)](https://gitter.im/lychee-eng/parenchyma)
-[![](https://tokei.rs/b1/github/lychee-eng/parenchyma)](https://github.com/lychee-eng/parenchyma)
 
 Parenchyma started off as a hard fork of [Collenchyma][collenchyma-repo] (hence the name), an 
 extensible HPC framework developed by the [Autumn team] as well as an amazing group 

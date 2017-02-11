@@ -26,14 +26,14 @@ pub trait Context: 'static + Clone + Eq + Hash + PartialEq + Sized {
         memory:         &mut <Self::F as Framework>::M, 
         source_context: &NativeContext, 
         source_memory:  &NativeMemory) 
-        -> Result;
+        -> Result<(), <Self::F as Framework>::E>;
 
     fn synch_out(
         self:           &Self, 
         memory:         &<Self::F as Framework>::M, 
         destn_context:  &NativeContext, 
         destn_memory:   &mut NativeMemory) 
-        -> Result;
+        -> Result<(), <Self::F as Framework>::E>;
 }
 
 #[doc(hidden)]
@@ -84,6 +84,7 @@ impl<V> ContextView for V where V: 'static + Context {
                     (Some(memory), Some(source_context), Some(source_memory)) => {
 
                         self.synch_in(memory, source_context, source_memory)
+                            .map_err(Error::from_framework::<V::F>)
                     },
 
                     _ => {
@@ -97,6 +98,7 @@ impl<V> ContextView for V where V: 'static + Context {
                     (Some(memory), Some(destn_context), Some(destn_memory)) => {
 
                         self.synch_out(memory, destn_context, destn_memory)
+                            .map_err(Error::from_framework::<V::F>)
                     },
 
                     _ => {

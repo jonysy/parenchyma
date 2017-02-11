@@ -1,10 +1,11 @@
+use {opencl, opencl_sys};
 use parenchyma::Processor;
 use std::borrow::Cow;
-use super::{cl, core};
+use super::OpenCLError;
 
 #[derive(Clone, Debug)]
 pub struct OpenCLDevice {
-    pub(super) id: core::DeviceId,
+    ptr: opencl::api::DevicePtr,
     /// maximum compute units
     pub compute_units: u32,
     /// The name of the device
@@ -15,51 +16,27 @@ pub struct OpenCLDevice {
     pub processor: Processor,
 }
 
-impl<'d> From<&'d cl::Device> for OpenCLDevice {
+impl OpenCLDevice {
 
-    fn from(cl_device: &cl::Device) -> Self {
+    pub fn new(ptr: opencl::api::DevicePtr) -> Result<Self, OpenCLError> {
 
-        let id = *cl_device.as_core();
-        let compute_units = {
-            match cl_device.info(cl::enums::DeviceInfo::MaxComputeUnits) {
-                cl::enums::DeviceInfoResult::MaxComputeUnits(n) => n,
-                _ => unreachable!()
-            }
-        };
-        let name = cl_device.name();
-        let workgroup_size = cl_device.max_wg_size().unwrap();
-        let processor = {
-            match cl_device.info(cl::enums::DeviceInfo::Type) {
-                cl::enums::DeviceInfoResult::Type(device_type) => {
+        let compute_units = ptr.max_compute_units()?;
+        let name = ptr.name()?;
+        let workgroup_size = ptr.max_work_group_size()?;
 
-                    match device_type {
-                        core::DEVICE_TYPE_CPU => {
-                            Processor::Cpu
-                        },
-                        core::DEVICE_TYPE_GPU => {
-                            Processor::Gpu
-                        },
-                        core::DEVICE_TYPE_ACCELERATOR => {
-                            Processor::Accelerator
-                        },
-                        core::DEVICE_TYPE_CUSTOM => {
-                            Processor::Other(Cow::from(format!("{:?}", device_type)))
-                        },
-                        _ => {
-                            unreachable!()
-                        }
-                    }
-                },
-                _ => unreachable!()
-            }
+        let processor = match ptr.type_()? {
+            opencl_sys::CL_DEVICE_TYPE_CPU => Processor::Cpu,
+            opencl_sys::CL_DEVICE_TYPE_GPU => Processor::Gpu,
+            opencl_sys::CL_DEVICE_TYPE_ACCELERATOR => Processor::Accelerator,
+            p @ _ => Processor::Other(Cow::from(p.to_string()))
         };
 
-        OpenCLDevice {
-            id: id,
+        Ok(OpenCLDevice {
+            ptr: ptr,
             compute_units: compute_units,
             name: name,
             workgroup_size: workgroup_size,
             processor: processor,
-        }
+        })
     }
 }

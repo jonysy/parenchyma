@@ -1,4 +1,4 @@
-use cl;
+use opencl;
 use parenchyma::Framework;
 use super::{OpenCLContext, OpenCLDevice, OpenCLError, OpenCLMemory, OpenCLPlatform};
 
@@ -47,13 +47,21 @@ impl Framework for OpenCL {
 
     /// Initializes the framework.
     fn new() -> Result<Self, OpenCLError> {
-        let available_platforms = cl::Platform::list().iter().map(From::from).collect();
+        let mut platform_ptrs = opencl::api::platform_ids()?;
+        let capacity = platform_ptrs.len();
+        let mut available_platforms = Vec::with_capacity(capacity);
+        for _ in 0..capacity {
+
+            let ptr = platform_ptrs.remove(0);
+            let p = OpenCLPlatform::new(ptr)?;
+            available_platforms.push(p)
+        }
 
         Ok(OpenCL { available_platforms: available_platforms })
     }
 
     /// Returns a default selection of devices for the framework.
-    fn default_selection(&self) -> Vec<Self::D> {
+    fn default_selection(&self) -> Vec<OpenCLDevice> {
         self.available_platforms[0].available_devices.clone()
     }
 }

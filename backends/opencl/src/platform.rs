@@ -1,5 +1,5 @@
-use super::{cl, core};
-use super::OpenCLDevice;
+use opencl;
+use super::{OpenCLDevice, OpenCLError};
 
 /// A platform specifies the OpenCL implementation.
 ///
@@ -8,26 +8,32 @@ use super::OpenCLDevice;
 /// other words, an OpenCL context can only encapsulate devices from a single platform.
 #[derive(Debug)]
 pub struct OpenCLPlatform {
-    id: core::PlatformId,
+    ptr: opencl::api::PlatformPtr,
     pub name: String,
     pub available_devices: Vec<OpenCLDevice>,
 }
 
-impl<'p> From<&'p cl::Platform> for OpenCLPlatform {
+impl OpenCLPlatform {
 
-    fn from(cl_platform: &cl::Platform) -> Self {
+    pub fn new(ptr: opencl::api::PlatformPtr) -> Result<Self, OpenCLError> {
 
-        let id = *cl_platform.as_core();
-        let name = cl_platform.name();
-        let available_devices = {
-            let list = cl::Device::list_all(&cl_platform);
-            list.unwrap().iter().map(From::from).collect()
-        };
+        let mut device_ptrs = ptr.all_device_ids()?;
+        let capacity = device_ptrs.len();
+        let mut available_devices = Vec::with_capacity(capacity);
 
-        OpenCLPlatform {
-            id: id,
+        for _ in 0..capacity {
+
+            let ptr = device_ptrs.remove(0);
+            let d = OpenCLDevice::new(ptr)?;
+            available_devices.push(d);
+        }
+
+        let name = ptr.name()?;
+
+        Ok(OpenCLPlatform {
+            ptr: ptr,
             name: name,
             available_devices: available_devices,
-        }
+        })
     }
 }
