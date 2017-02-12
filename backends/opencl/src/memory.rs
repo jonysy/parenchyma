@@ -1,4 +1,4 @@
-use opencl::api::MemoryObject;
+use opencl::MemoryObject;
 
 /// Holds a OpenCL memory id and manages its deallocation
 #[derive(Debug)]

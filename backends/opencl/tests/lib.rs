@@ -4,7 +4,7 @@ extern crate parenchyma;
 extern crate parenchyma_opencl as opencl;
 
 mod shared_memory_spec {
-    use opencl::{OpenCL};
+    use opencl::OpenCL;
     use parenchyma::{Backend, Framework, Native, NativeMemory, Tensor};
 
     fn write_to_memory<T: Copy>(mem: &mut NativeMemory, data: &[T]) {

@@ -1,9 +1,8 @@
 use opencl::{ContextPtr, MemoryObject, QueuePtr};
 use opencl::enqueue;
 use parenchyma::{Context, NativeContext, NativeMemory};
-use std::hash::{Hash, Hasher};
 
-use super::{OpenCLDevice, OpenCLError, OpenCLMemory, OpenCL, OpenCLQueue, Result};
+use super::{OpenCLDevice, OpenCLMemory, OpenCL, OpenCLQueue, Result};
 
 // notes:
 // shared context if more than one device is passed in
@@ -77,11 +76,3 @@ impl PartialEq for OpenCLContext {
 }
 
 impl Eq for OpenCLContext { }
-
-// impl Hash for OpenCLContext {
-
-//     fn hash<H>(&self, state: &mut H) where H: Hasher {
-//         // (unsafe { self.id.as_ptr() as isize }).hash(state);
-//         unimplemented!()
-//     }
-// }

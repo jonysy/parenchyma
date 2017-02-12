@@ -22,5 +22,5 @@ use opencl;
 /// - Out-of-order
 #[derive(Clone, Debug)]
 pub struct OpenCLQueue {
-    pub(super) ptr: opencl::api::QueuePtr,
+    pub(super) ptr: opencl::QueuePtr,
 }

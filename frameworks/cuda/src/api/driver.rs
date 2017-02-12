@@ -1,7 +1,8 @@
 use cuda_sys;
 use error::{Error, ErrorKind, Result};
+use std::os::raw::c_void;
 use std::ptr;
-use super::{ContextFlag, ContextHandle, DeviceHandle};
+use super::{ContextFlag, ContextHandle, DeviceHandle, Memory};
 
 
 /// Initialize the CUDA driver API.
@@ -79,7 +80,7 @@ pub fn device(n: u32) -> Result<DeviceHandle> {
 /// # Parameters
 ///
 /// * `f` - Context creation flags
-pub fn create_context(f: ContextFlag, dev: DeviceHandle) -> Result<ContextHandle> {
+pub fn create_context(f: ContextFlag, dev: &DeviceHandle) -> Result<ContextHandle> {
     unsafe {
         let mut ctx = ptr::null_mut();
 
@@ -89,6 +90,58 @@ pub fn create_context(f: ContextFlag, dev: DeviceHandle) -> Result<ContextHandle
 
             e @ _ =>
                 Err(Error::from(e.into(): ErrorKind)),
+        }
+    }
+}
+
+/// Allocates byte_size bytes of linear memory on the device and returns in *dptr a pointer to the 
+/// allocated memory. The allocated memory is suitably aligned for any kind of variable. The memory 
+/// is not cleared. If bytesize is 0, cuMemAlloc() returns CUDA_ERROR_INVALID_VALUE.
+pub fn mem_alloc(byte_size: usize) -> Result<Memory> {
+
+    unsafe {
+        let mut dptr = 0u64;
+
+        match cuda_sys::cuMemAlloc_v2(&mut dptr, byte_size) {
+            cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+                Ok(Memory(dptr)),
+
+            e @ _ =>
+                Err(Error::from(e.into(): ErrorKind)),
+        }
+    }
+}
+
+/// Copies from host memory to device memory. dstDevice and srcHost are the base addresses of the 
+/// destination and source, respectively. ByteCount specifies the number of bytes to copy. Note 
+/// that this function is synchronous.
+pub fn mem_cpy_h_to_d(dst_device: &Memory, src_host: *const c_void, byte_count: usize) -> Result {
+
+    unsafe {
+
+        match cuda_sys::cuMemcpyHtoD_v2(dst_device.0, src_host, byte_count) {
+            cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+                Ok(()),
+
+            e @ _ =>
+                Err(Error::from(e.into(): ErrorKind)),
+        }
+    }
+}
+
+/// Copies from device to host memory. dstHost and srcDevice specify the base pointers of the 
+/// destination and source, respectively. ByteCount specifies the number of bytes to copy. Note 
+/// that this function is synchronous.
+pub fn mem_cpy_d_to_h(dst_host: *mut c_void, src_device: &Memory, byte_count: usize) -> Result {
+
+    unsafe {
+
+        match cuda_sys::cuMemcpyDtoH_v2(dst_host, src_device.0, byte_count) {
+            cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+                Ok(()),
+
+            e @ _ =>
+                Err(Error::from(e.into(): ErrorKind)),   
         }
     }
 }

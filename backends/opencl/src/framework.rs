@@ -1,6 +1,6 @@
 use opencl;
 use parenchyma::Framework;
-use super::{OpenCLContext, OpenCLDevice, OpenCLError, OpenCLMemory, OpenCLPlatform};
+use super::{OpenCLContext, OpenCLDevice, OpenCLMemory, OpenCLPlatform, Result};
 
 /// Provides the OpenCL framework.
 ///
@@ -35,7 +35,7 @@ impl Framework for OpenCL {
     type D = OpenCLDevice;
 
     /// An error type associated with the framework.
-    type E = OpenCLError;
+    type E = opencl::error::Error;
 
     /// The memory representation.
     ///
@@ -46,8 +46,8 @@ impl Framework for OpenCL {
     type M = OpenCLMemory;
 
     /// Initializes the framework.
-    fn new() -> Result<Self, OpenCLError> {
-        let mut platform_ptrs = opencl::api::platform_ids()?;
+    fn new() -> Result<Self> {
+        let mut platform_ptrs = opencl::platform_ids()?;
         let capacity = platform_ptrs.len();
         let mut available_platforms = Vec::with_capacity(capacity);
         

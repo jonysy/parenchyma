@@ -1,11 +1,11 @@
 use {opencl, opencl_sys};
 use parenchyma::Processor;
 use std::borrow::Cow;
-use super::OpenCLError;
+use super::Result;
 
 #[derive(Clone, Debug)]
 pub struct OpenCLDevice {
-    pub(super) ptr: opencl::api::DevicePtr,
+    pub(super) ptr: opencl::DevicePtr,
     /// maximum compute units
     pub compute_units: u32,
     /// The name of the device
@@ -18,7 +18,7 @@ pub struct OpenCLDevice {
 
 impl OpenCLDevice {
 
-    pub fn new(ptr: opencl::api::DevicePtr) -> Result<Self, OpenCLError> {
+    pub fn new(ptr: opencl::DevicePtr) -> Result<Self> {
 
         let compute_units = ptr.max_compute_units()?;
         let name = ptr.name()?;

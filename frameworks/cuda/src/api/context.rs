@@ -34,3 +34,11 @@ impl Drop for ContextHandle {
         }
     }
 }
+
+impl PartialEq<ContextHandle> for ContextHandle {
+
+    fn eq(&self, other: &ContextHandle) -> bool {
+
+        self.0 == other.0
+    }
+}

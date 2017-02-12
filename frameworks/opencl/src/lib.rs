@@ -5,7 +5,7 @@
 
 extern crate opencl_sys;
 
+pub mod error;
 pub use self::api::*;
 
-pub mod api;
-pub mod error;
+mod api;

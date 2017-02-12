@@ -25,7 +25,6 @@
 //! - Transfer results back
 //! - Free memory on devices
 
-#![allow(warnings)]
 #![feature(associated_consts, pub_restricted)]
 
 extern crate opencl;
@@ -34,18 +33,18 @@ extern crate parenchyma;
 
 pub use self::context::OpenCLContext;
 pub use self::device::OpenCLDevice;
-pub use self::error::{OpenCLError, Result};
 pub use self::event::OpenCLEvent;
 pub use self::framework::OpenCL;
 pub use self::memory::OpenCLMemory;
 pub use self::platform::OpenCLPlatform;
+pub use self::result::Result;
 pub use self::queue::OpenCLQueue;
 
 mod context;
 mod device;
-mod error;
 mod event;
 mod framework;
 mod memory;
 mod platform;
+mod result;
 mod queue;

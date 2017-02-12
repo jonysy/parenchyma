@@ -1,7 +1,7 @@
 use cuda::driver;
 use cuda::error::{Error, ErrorKind};
 use parenchyma::{Framework, Processor};
-use super::{CudaContext, CudaDevice, CudaError, CudaMemory};
+use super::{CudaContext, CudaDevice, CudaMemory, Result};
 
 pub struct Cuda {
     available_devices: Vec<CudaDevice>,
@@ -17,13 +17,13 @@ impl Framework for Cuda {
     /// The device representation.
     type D = CudaDevice;
 
-    type E = CudaError;
+    type E = Error;
 
     /// The memory representation.
     type M = CudaMemory;
 
     /// Initializes the framework.
-    fn new() -> Result<Cuda, CudaError> {
+    fn new() -> Result<Cuda> {
         let _ = driver::init()?;
         let ndevices = driver::ndevices()?;
 
@@ -33,7 +33,7 @@ impl Framework for Cuda {
 
         let mut devices = Vec::with_capacity(ndevices as usize);
 
-        let range = (0..ndevices);
+        let range = 0..ndevices;
 
         for n in range {
             let h = driver::device(n as u32)?;
