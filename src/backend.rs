@@ -38,7 +38,7 @@ impl<F> Backend<F> where F: Framework {
     /// let framework = Native::new().expect("failed to initialize framework");
     ///
     /// // Available devices can be obtained through the framework.
-    /// let selection = framework.available_devices.clone();
+    /// let selection = framework.available_devices[0].clone();
     ///
     /// // Create a ready to go `Backend` from the framework.
     /// let backend = Backend::new(framework, selection).expect("failed to construct backend");

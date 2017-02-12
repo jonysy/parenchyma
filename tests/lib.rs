@@ -30,7 +30,7 @@ mod shared_memory_spec {
     #[test]
     fn it_creates_new_shared_memory_for_native() {
         let native = Native::new().unwrap();
-        let context = NativeContext::new(native.available_devices.clone()).unwrap();
+        let context = NativeContext::new(native.available_devices[0].clone()).unwrap();
         let mut tensor = Tensor::<f32>::from(vec![10]);
         let data = tensor.write_only(&context).unwrap().as_slice::<f32>();
         assert_eq!(10, data.len());
@@ -39,7 +39,7 @@ mod shared_memory_spec {
     #[test]
     fn it_fails_on_initialized_memory_read() {
         let native = Native::new().unwrap();
-        let context = NativeContext::new(native.available_devices.clone()).unwrap();
+        let context = NativeContext::new(native.available_devices[0].clone()).unwrap();
         let mut tensor = Tensor::<f32>::from(vec![10]);
 
         assert_eq!(tensor.read(&context).unwrap_err().kind(), ErrorKind::UninitializedMemory);
