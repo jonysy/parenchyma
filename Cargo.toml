@@ -15,6 +15,9 @@ members = [
     "./backends/cuda",
     "./backends/opencl",
 
+    # Backend extensions
+    "./extensions/array",
+
     # Frameworks
     "./frameworks/cuda", 
     "./frameworks/cuda-sys", 
