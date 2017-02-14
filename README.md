@@ -13,16 +13,16 @@ which Parenchyma developers/contributors are not responsible.
 Many of the original comments used for documentation purposes remain in the code base, along with 
 a few necessary additions/modifications.
 
-```toml
-[dependencies]
-parenchyma = "0.0.2"
-```
-
 > Disclaimer: Parenchyma is currently undergoing extensive refactoring and improvement. Therefore, 
 > it is likely that many of the features available in the original Collenchyma project may not yet 
 > be available in the Parenchyma project. It is also likely that certain features may never be 
 > available in the Parenchyma project, as the different approaches that are currently being 
 > considered may prove to be better than the original approach.
+
+```toml
+[dependencies]
+parenchyma = "0.0.2"
+```
 
 ## Introduction
 
