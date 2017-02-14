@@ -10,7 +10,7 @@ Therefore, before migrating over, one should go through the documentation carefu
 the mistake of misusing the framework. Not doing so may result in unintended behavior for 
 which Parenchyma developers/contributors are not responsible.
 
-Many of the original comments used for documentation purposes remain in the code base, along with 
+Many of the original comments used for documentation purposes remain in the code base along with 
 a few necessary additions/modifications.
 
 > Disclaimer: Parenchyma is currently undergoing extensive refactoring and improvement. Therefore, 
