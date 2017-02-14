@@ -13,6 +13,11 @@ which Parenchyma developers/contributors are not responsible.
 Many of the original comments used for documentation purposes remain in the code base, along with 
 a few necessary additions/modifications.
 
+```toml
+[dependencies]
+parenchyma = "0.0.2"
+```
+
 > Disclaimer: Parenchyma is currently undergoing extensive refactoring and improvement. Therefore, 
 > it is likely that many of the features available in the original Collenchyma project may not yet 
 > be available in the Parenchyma project. It is also likely that certain features may never be 
@@ -30,27 +35,6 @@ Thanks to easy parallelization, Parenchyma lets you run highly-performant code o
 or mobile devices without the need to adapt your code for each machine. Parenchyma does 
 not require OpenCL or CUDA on the machine and automatically [falls back](/../../issues/15) to the 
 native host CPU, making your application highly flexible.
-
-## Usage
-
-```toml
-[dependencies]
-parenchyma = "0.1.0"
-parenchyma-native = "0.1.0"
-```
-
-```rust
-extern crate parenchyma;
-extern crate parenchyma_native;
-
-use parenchyma::Backend;
-use parenchyma_native::Native;
-
-fn main() {
-
-    let backend: Backend<Native> = Backend::default().expect("something went wrong!");
-}
-```
 
 ## License
 
