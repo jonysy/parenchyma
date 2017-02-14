@@ -1,5 +1,5 @@
-use cuda_sys;
 use std::{error, fmt, result};
+use super::sys;
 
 pub type Result<T = ()> = result::Result<T, Error>;
 
@@ -199,10 +199,10 @@ pub enum ErrorKind {
     Unknown,
 }
 
-impl From<cuda_sys::cudaError_enum> for ErrorKind {
+impl From<sys::cudaError_enum> for ErrorKind {
 
-    fn from(cuda_error_enum: cuda_sys::cudaError_enum) -> ErrorKind {
-        use cuda_sys::cudaError_enum::*;
+    fn from(cuda_error_enum: sys::cudaError_enum) -> ErrorKind {
+        use super::sys::cudaError_enum::*;
         use self::ErrorKind::*;
 
         match cuda_error_enum {

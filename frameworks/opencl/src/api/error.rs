@@ -65,11 +65,11 @@ pub enum ErrorKind {
     PlatformNotFoundKhr,
 }
 
-impl From<::opencl_sys::CLStatus> for ErrorKind {
+impl From<super::sys::CLStatus> for ErrorKind {
 
-    fn from(cl_status: ::opencl_sys::CLStatus) -> ErrorKind {
+    fn from(cl_status: super::sys::CLStatus) -> ErrorKind {
         use self::ErrorKind::*;
-        use opencl_sys::CLStatus::*;
+        use super::sys::CLStatus::*;
 
         match cl_status {
             CL_SUCCESS => unreachable!(),

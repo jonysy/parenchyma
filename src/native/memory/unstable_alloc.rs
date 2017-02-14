@@ -1,10 +1,14 @@
 use alloc::raw_vec::RawVec;
 
-/// Alternative way to allocate memory, requiring unstable RawVec.
-pub fn allocate_boxed_slice(cap: usize) -> Box<[u8]> {
-	let raw = RawVec::with_capacity(cap);
+/// An alternative way to allocate memory, but requires [`RawVec`][RawVec] which is currently
+/// unstable (*[#27783]).
+///
+/// [#27783]: https://github.com/rust-lang/rust/issues/27783
+/// [RawVec]: https://doc.rust-lang.org/alloc/raw_vec/struct.RawVec.html
+pub fn allocate_boxed_slice(capacity: usize) -> Box<[u8]> {
+	let raw_vec = RawVec::with_capacity(capacity);
 
 	unsafe {
-		raw.into_box()
+		raw_vec.into_box()
 	}
 }

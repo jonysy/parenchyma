@@ -1,4 +1,4 @@
-use cuda::DeviceHandle;
+use api::DeviceHandle;
 use parenchyma::Processor;
 
 #[derive(Clone, Debug)]

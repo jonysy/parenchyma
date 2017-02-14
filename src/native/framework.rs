@@ -1,8 +1,8 @@
-use super::super::{Framework, Processor};
+use super::super::{Framework, Category};
 use super::super::error::{Error, Result};
 use super::{NativeContext, NativeDevice, NativeMemory};
 
-/// Provides the native framework.
+/// The `Native` framework simply represents the host CPU.
 ///
 /// ```rust
 /// use parenchyma::{Backend, Framework, Native};
@@ -13,6 +13,7 @@ use super::{NativeContext, NativeDevice, NativeMemory};
 /// ```
 #[derive(Clone, Debug)]
 pub struct Native {
+    /// Available devices
     pub available_devices: Vec<NativeDevice>,
 }
 
@@ -32,7 +33,7 @@ impl Framework for Native {
             available_devices: vec![NativeDevice {
                 name: "Host CPU",
                 compute_units: 1,
-                processor: Processor::Cpu,
+                category: Category::Cpu,
             }]
         })
     }

@@ -1,4 +1,4 @@
-use opencl;
+use api;
 use super::{OpenCLDevice, Result};
 
 /// A platform specifies the OpenCL implementation.
@@ -8,14 +8,14 @@ use super::{OpenCLDevice, Result};
 /// other words, an OpenCL context can only encapsulate devices from a single platform.
 #[derive(Debug)]
 pub struct OpenCLPlatform {
-    ptr: opencl::PlatformPtr,
+    ptr: api::Platform,
     pub name: String,
     pub available_devices: Vec<OpenCLDevice>,
 }
 
 impl OpenCLPlatform {
 
-    pub fn new(ptr: opencl::PlatformPtr) -> Result<Self> {
+    pub fn new(ptr: api::Platform) -> Result<Self> {
 
         let mut device_ptrs = ptr.all_device_ids()?;
         let capacity = device_ptrs.len();

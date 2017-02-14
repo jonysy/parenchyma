@@ -1,4 +1,4 @@
-use cuda::{driver, ContextHandle};
+use api::{driver, ContextHandle};
 use parenchyma::{Context, NativeContext, NativeMemory};
 use std::rc::Rc;
 pub use super::{Cuda, CudaDevice, CudaMemory, Result};
@@ -14,7 +14,7 @@ impl Context for CudaContext {
 
     /// Creates a new CUDA context for computation.
     fn new(device: CudaDevice) -> Result<Self> {
-        use cuda::ContextFlag::CU_CTX_SCHED_BLOCKING_SYNC;
+        use api::ContextFlag::CU_CTX_SCHED_BLOCKING_SYNC;
 
         let context = driver::create_context(CU_CTX_SCHED_BLOCKING_SYNC, &device.handle)?;
 

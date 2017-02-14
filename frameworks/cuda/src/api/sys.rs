@@ -1,4 +1,4 @@
-#![feature(untagged_unions)]
+#![allow(warnings)]
 
 #[link(name = "CUDA", kind = "framework")]
 extern { }

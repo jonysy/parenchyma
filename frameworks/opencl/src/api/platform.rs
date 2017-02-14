@@ -1,19 +1,13 @@
-use opencl_sys;
 use std::ptr;
 
-use error::{ErrorKind, Result};
-use super::DevicePtr;
+use super::error::Result;
+use super::Device;
+use super::sys;
 
 #[derive(Debug)]
-pub struct PlatformPtr(pub(super) opencl_sys::cl_platform_id);
+pub struct Platform(pub(super) sys::cl_platform_id);
 
-  // pub fn clGetPlatformInfo(platform: cl_platform_id,
-  //                          param_name: cl_platform_info,
-  //                          param_value_size: libc::size_t,
-  //                          param_value: *mut libc::c_void,
-  //                          param_value_size_ret: *mut libc::size_t) -> cl_int;
-
-impl PlatformPtr {
+impl Platform {
 
     fn info_size(&self, p: u32) -> Result<usize> {
 
@@ -21,11 +15,8 @@ impl PlatformPtr {
 
             let mut size = 0;
 
-            match opencl_sys::clGetPlatformInfo(self.0, p, 0, ptr::null_mut(), &mut size) {
-                opencl_sys::CLStatus::CL_SUCCESS => Ok(size),
-
-                e @ _ => Err((e.into(): ErrorKind).into())
-            }
+            result!(
+                sys::clGetPlatformInfo(self.0, p, 0, ptr::null_mut(), &mut size) => Ok(size))
         }
     }
 
@@ -39,14 +30,9 @@ impl PlatformPtr {
 
             let null = ptr::null_mut();
 
-            match opencl_sys::clGetPlatformInfo(self.0, p, size, b.as_mut_ptr() as *mut _, null) {
-                opencl_sys::CLStatus::CL_SUCCESS => {
-
-                    Ok(String::from_utf8(b).unwrap())
-                },
-
-                e @ _ => Err((e.into(): ErrorKind).into())
-            }
+            result!(
+                sys::clGetPlatformInfo(self.0, p, size, b.as_mut_ptr() as *mut _, null) 
+                => Ok(String::from_utf8(b).unwrap()))
         }
     }
 
@@ -61,19 +47,19 @@ impl PlatformPtr {
     ///                    profile is defined to be a subset for each version of OpenCL.
     pub fn profile(&self) -> Result<String> {
 
-        self.info(opencl_sys::CL_PLATFORM_PROFILE)
+        self.info(sys::CL_PLATFORM_PROFILE)
     }
 
     /// Platform name
     pub fn name(&self) -> Result<String> {
 
-        self.info(opencl_sys::CL_PLATFORM_NAME)
+        self.info(sys::CL_PLATFORM_NAME)
     }
 
     /// Platform vendor
     pub fn vendor(&self) -> Result<String> {
 
-        self.info(opencl_sys::CL_PLATFORM_VENDOR)
+        self.info(sys::CL_PLATFORM_VENDOR)
     }
 
     /// Returns a space-separated list of extension names (the extension names themselves do 
@@ -81,7 +67,7 @@ impl PlatformPtr {
     /// supported by all devices associated with this platform.
     pub fn extensions(&self) -> Result<Vec<String>> {
 
-        self.info(opencl_sys::CL_PLATFORM_EXTENSIONS).map(|st| {
+        self.info(sys::CL_PLATFORM_EXTENSIONS).map(|st| {
             st.split_whitespace().map(|s| s.into()).collect()
         })
     }
@@ -92,34 +78,28 @@ impl PlatformPtr {
 
             let mut ndevices = 0;
 
-            match opencl_sys::clGetDeviceIDs(self.0, t, 0, ptr::null_mut(), &mut ndevices) {
-                opencl_sys::CLStatus::CL_SUCCESS => Ok(ndevices),
-
-                e @ _ => Err((e.into(): ErrorKind).into())
-            }
+            result!(
+                sys::clGetDeviceIDs(self.0, t, 0, ptr::null_mut(), &mut ndevices)
+                => Ok(ndevices))
         }
     }
 
-    pub fn devices_by_type(&self, t: u64) -> Result<Vec<DevicePtr>> {
+    pub fn devices_by_type(&self, t: u64) -> Result<Vec<Device>> {
 
         unsafe {
 
             let ndevices = self.ndevices_by_type(t)?;
-            let mut vec_id = vec![0 as opencl_sys::cl_device_id; ndevices as usize];
+            let mut vec_id = vec![0 as sys::cl_device_id; ndevices as usize];
             let n = ptr::null_mut();
 
-            match opencl_sys::clGetDeviceIDs(self.0, t, ndevices, vec_id.as_mut_ptr(), n) {
-                opencl_sys::CLStatus::CL_SUCCESS => {
-                    Ok(vec_id.iter().map(|&id| DevicePtr(id)).collect())
-                },
-
-                e @ _ => Err((e.into(): ErrorKind).into())
-            }
+            result!(
+                sys::clGetDeviceIDs(self.0, t, ndevices, vec_id.as_mut_ptr(), n)
+                => Ok(vec_id.iter().map(|&id| Device::from(id)).collect()))
         }
     }
 
-    pub fn all_device_ids(&self) -> Result<Vec<DevicePtr>> {
+    pub fn all_device_ids(&self) -> Result<Vec<Device>> {
 
-        self.devices_by_type(opencl_sys::CL_DEVICE_TYPE_ALL)
+        self.devices_by_type(sys::CL_DEVICE_TYPE_ALL)
     }
 }

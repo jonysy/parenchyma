@@ -1,9 +1,9 @@
-use cuda_sys;
-use error::{Error, ErrorKind, Result};
 use std::mem;
+use super::error::{Error, ErrorKind, Result};
+use super::sys;
 
 #[derive(Debug)]
-pub struct ContextHandle(pub(super) cuda_sys::CUcontext);
+pub struct ContextHandle(pub(super) sys::CUcontext);
 
 impl ContextHandle {
 
@@ -12,8 +12,8 @@ impl ContextHandle {
     /// out of scope.
     pub fn destroy(self) -> Result {
         unsafe {
-            match cuda_sys::cuCtxDestroy_v2(self.0) {
-                cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+            match sys::cuCtxDestroy_v2(self.0) {
+                sys::cudaError_enum::CUDA_SUCCESS => 
                     Ok(()),
 
                 e @ _ => 

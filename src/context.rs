@@ -1,26 +1,28 @@
-use std::any::{Any, TypeId};
-use std::hash::Hash;
-
 use error::{Error, ErrorKind, Result};
+use std::any::{Any, TypeId};
+use std::fmt::Debug;
 use super::{NativeContext, NativeMemory, Framework};
-use super::shared::Location;
 
-pub trait Context: 'static + Clone + Eq + PartialEq + Sized {
-    /// The framework associated with this context.
+/// Contexts are the heart of both OpenCL and CUDA applications. Contexts provide a container for
+/// objects such as memory, command-queues, programs/modules and kernels.
+pub trait Context: 'static + Clone + Debug + Eq + PartialEq + Sized {
+
+    /// The framework associated with the context.
     type F: Framework<Context = Self>;
 
     /// Constructs a context from a selection of devices.
     ///
     /// # Arguments
     ///
-    /// * `devices` - takes a list of devices.
+    /// * `devices` - a list of devices.
     fn new(devices: <Self::F as Framework>::D) 
         -> Result<Self, <Self::F as Framework>::E>;
 
-    /// Allocates memory
+    /// Allocates memory on a device.
     fn allocate_memory(&self, size: usize) 
         -> Result<<Self::F as Framework>::M, <Self::F as Framework>::E>;
 
+    /// Synchronizes `memory` from `source`.
     fn synch_in(
         self:           &Self, 
         memory:         &mut <Self::F as Framework>::M, 
@@ -28,6 +30,7 @@ pub trait Context: 'static + Clone + Eq + PartialEq + Sized {
         source_memory:  &NativeMemory) 
         -> Result<(), <Self::F as Framework>::E>;
 
+    /// Synchronizes `memory` to `destination`.
     fn synch_out(
         self:           &Self, 
         memory:         &<Self::F as Framework>::M, 
@@ -40,13 +43,13 @@ pub trait Context: 'static + Clone + Eq + PartialEq + Sized {
 pub enum Action<'s> {
     Write {
         memory: &'s mut Any, 
-        source_context: &'s ContextView, 
+        source_context: &'s ObjSafeCtx, 
         source_memory: &'s Any 
     },
 
     Read { 
         memory: &'s Any,  
-        destn_context: &'s ContextView,  
+        destn_context: &'s ObjSafeCtx,  
         destn_memory: &'s mut Any 
     },
 }
@@ -59,7 +62,7 @@ pub enum Action<'s> {
 /// * [RFC 428](https://github.com/rust-lang/rfcs/issues/428)
 /// * [RFC 546](https://github.com/rust-lang/rfcs/blob/master/text/0546-Self-not-sized-by-default.md)
 #[doc(hidden)]
-pub trait ContextView: Any {
+pub trait ObjSafeCtx: Any + Debug {
 
     fn alloc(&self, size: usize) -> Result<Box<Any>>;
 
@@ -67,7 +70,7 @@ pub trait ContextView: Any {
 }
 
 #[doc(hidden)]
-impl<V> ContextView for V where V: 'static + Context {
+impl<V> ObjSafeCtx for V where V: 'static + Context {
 
     fn alloc(&self, size: usize) -> Result<Box<Any>> {
 
@@ -111,10 +114,10 @@ impl<V> ContextView for V where V: 'static + Context {
 }
 
 #[doc(hidden)]
-impl ContextView {
+impl ObjSafeCtx {
 
     /// Returns true if the boxed type is the same as `T`.
-    pub fn is<V: ContextView>(&self) -> bool {
+    pub fn is<V: ObjSafeCtx>(&self) -> bool {
         let t = TypeId::of::<V>();
 
         let boxed = self.get_type_id();
@@ -123,21 +126,10 @@ impl ContextView {
     }
 
     /// Returns some reference to the boxed value if it is of type `T`, or `None` if it isn't.
-    pub fn downcast_ref<V: ContextView>(&self) -> Option<&V> {
+    pub fn downcast_ref<V: ObjSafeCtx>(&self) -> Option<&V> {
         if self.is::<V>() {
             unsafe {
-                Some(&*(self as *const ContextView as *const V))
-            }
-        } else {
-            None
-        }
-    }
-
-    /// Returns some mutable reference to the boxed value if it is of type `T`, or `None` if it isn't.
-    pub fn downcast_mut<V: ContextView>(&mut self) -> Option<&mut V> {
-        if self.is::<V>() {
-            unsafe {
-                Some(&mut *(self as *mut ContextView as *mut V))
+                Some(&*(self as *const ObjSafeCtx as *const V))
             }
         } else {
             None

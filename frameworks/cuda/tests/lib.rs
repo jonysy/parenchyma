@@ -5,7 +5,7 @@ extern crate parenchyma_cuda as cuda;
 
 mod shared_memory_spec {
     use cuda::Cuda;
-    use parenchyma::{Backend, Native, NativeMemory, Tensor};
+    use parenchyma::{Backend, Native, NativeMemory, SharedTensor};
 
     fn write_to_memory<T: Copy>(mem: &mut NativeMemory, data: &[T]) {
 
@@ -22,7 +22,7 @@ mod shared_memory_spec {
 
         let backend: Backend<Cuda> = Backend::default().unwrap();
         let shape = vec![10];
-        let mut shared_data = Tensor::<f32>::from(shape);
+        let mut shared_data = SharedTensor::<f32>::from(shape);
         assert!(shared_data.write_only(backend.context()).is_ok())
     }
 
@@ -34,7 +34,7 @@ mod shared_memory_spec {
 
         let native: Backend<Native> = Backend::default().unwrap();
 
-        let mut mem: Tensor<f64> = Tensor::from(shape);
+        let mut mem: SharedTensor<f64> = SharedTensor::from(shape);
 
         write_to_memory(
             mem.write_only(native.context()).unwrap(), 

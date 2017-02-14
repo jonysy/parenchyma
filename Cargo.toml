@@ -11,16 +11,9 @@ unstable_alloc = [] # faster but unstable memory allocation on native machines
 
 [workspace]
 members = [
-    # Backend support
-    "./backends/cuda",
-    "./backends/opencl",
+    "./frameworks/cuda",
+    "./frameworks/opencl",
 
     # Backend extensions
     "./extensions/array",
-
-    # Frameworks
-    "./frameworks/cuda", 
-    "./frameworks/cuda-sys", 
-    "./frameworks/opencl", 
-    "./frameworks/opencl-sys"
 ]

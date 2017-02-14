@@ -1,10 +1,14 @@
 [package]
-name = "opencl"
-description = "A safe OpenCL wrapper"
-version = "0.1.0"
+name = "parenchyma-opencl"
+version = "0.0.2"
 authors = ["Jony <jonysy@users.noreply.github.com>"]
+keywords = ["backend", "computation", "hpc"]
+categories = []
 license = "MIT/Apache-2.0"
 
-[dependencies.opencl-sys]
-path = "../opencl-sys"
-version = "0.1.0"
+[dependencies]
+enum_primitive = "0.1.1"
+
+[dependencies.parenchyma]
+path = "../../"
+version = "0.0.2"

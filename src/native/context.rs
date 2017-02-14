@@ -1,10 +1,11 @@
 use super::super::Context;
 use super::super::error::Result;
-use std::hash::{Hash, Hasher};
 use super::{Native, NativeDevice, NativeMemory};
 
+/// Native context
 #[derive(Clone, Debug)]
 pub struct NativeContext {
+    /// Selected devices
     selected_devices: NativeDevice,
 }
 
@@ -17,8 +18,9 @@ impl Context for NativeContext {
     }
 
     fn allocate_memory(&self, size: usize) -> Result<NativeMemory> {
-        let memory = NativeMemory::allocate(size);
-        Ok(memory)
+        let bx: Box<[u8]> = super::memory::allocate_boxed_slice(size);
+        let mem = NativeMemory::from(bx);
+        Ok(mem)
     }
 
     fn synch_in(&self, destn: &mut NativeMemory, _: &NativeContext, src: &NativeMemory) -> Result {
@@ -42,11 +44,3 @@ impl PartialEq for NativeContext {
 }
 
 impl Eq for NativeContext { }
-
-impl Hash for NativeContext {
-
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        static ID: isize = 0;
-        ID.hash(state);
-    }
-}

@@ -1,5 +1,5 @@
-use cuda::driver;
-use cuda::error::{Error, ErrorKind};
+use api::driver;
+use api::error::{Error, ErrorKind};
 use parenchyma::{Framework, Processor};
 use super::{CudaContext, CudaDevice, CudaMemory, Result};
 

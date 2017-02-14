@@ -1,4 +1,4 @@
-use opencl::error::Error;
+use api::error::Error;
 use std::result;
 
 pub type Result<T = ()> = result::Result<T, Error>;

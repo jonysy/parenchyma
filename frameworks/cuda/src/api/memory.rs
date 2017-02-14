@@ -1,5 +1,5 @@
-use cuda_sys;
-use error::{Error, ErrorKind, Result};
+use super::error::{Error, ErrorKind, Result};
+use super::sys;
 
 pub struct Memory(pub(super) u64 /* dptr */);
 
@@ -10,8 +10,8 @@ impl Memory {
 
         unsafe {
 
-            match cuda_sys::cuMemFree_v2(self.0) {
-                cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+            match sys::cuMemFree_v2(self.0) {
+                sys::cudaError_enum::CUDA_SUCCESS => 
                     Ok(()),
 
                 e @ _ =>

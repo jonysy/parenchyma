@@ -1,11 +1,6 @@
 #![allow(dead_code, non_camel_case_types, non_upper_case_globals)]
-#![feature(libc)]
 
-#[macro_use]
-extern crate enum_primitive;
-
-extern crate libc;
-
+use libc;
 use std::fmt;
 use std::os::raw;
 

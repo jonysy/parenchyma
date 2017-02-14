@@ -24,14 +24,14 @@ mod framework_spec {
 
 #[cfg(test)]
 mod shared_memory_spec {
-    use parenchyma::{Context, Framework, Native, NativeContext, Tensor};
+    use parenchyma::{Context, Framework, Native, NativeContext, SharedTensor};
     use parenchyma::error::ErrorKind;
 
     #[test]
     fn it_creates_new_shared_memory_for_native() {
         let native = Native::new().unwrap();
         let context = NativeContext::new(native.available_devices[0].clone()).unwrap();
-        let mut tensor = Tensor::<f32>::from(vec![10]);
+        let mut tensor = SharedTensor::<f32>::from(vec![10]);
         let data = tensor.write_only(&context).unwrap().as_slice::<f32>();
         assert_eq!(10, data.len());
     }
@@ -40,7 +40,7 @@ mod shared_memory_spec {
     fn it_fails_on_initialized_memory_read() {
         let native = Native::new().unwrap();
         let context = NativeContext::new(native.available_devices[0].clone()).unwrap();
-        let mut tensor = Tensor::<f32>::from(vec![10]);
+        let mut tensor = SharedTensor::<f32>::from(vec![10]);
 
         assert_eq!(tensor.read(&context).unwrap_err().kind(), ErrorKind::UninitializedMemory);
 
@@ -55,7 +55,7 @@ mod shared_memory_spec {
 
 #[cfg(test)]
 mod tensor_spec {
-    use parenchyma::Tensor;
+    use parenchyma::SharedTensor;
 
     // #[test]
     // fn it_returns_correct_tensor_desc_stride() {
@@ -76,7 +76,7 @@ mod tensor_spec {
     #[test]
     fn it_returns_correct_size_for_rank_0() {
         // In order for memory to be correctly allocated, the size should never return less than 1.
-        let tensor_desc_r0 = Tensor::<f32>::from(vec![]);
+        let tensor_desc_r0 = SharedTensor::<f32>::from(vec![]);
         assert_eq!(1, tensor_desc_r0.capacity());
     }
 

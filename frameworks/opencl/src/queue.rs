@@ -1,4 +1,4 @@
-use opencl;
+use api;
 
 // A queue is used by the host application to submit work to a device.
 
@@ -22,5 +22,5 @@ use opencl;
 /// - Out-of-order
 #[derive(Clone, Debug)]
 pub struct OpenCLQueue {
-    pub(super) ptr: opencl::QueuePtr,
+    pub(super) ptr: api::Queue,
 }

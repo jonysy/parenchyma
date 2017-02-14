@@ -1,5 +1,4 @@
-use opencl::{ContextPtr, MemoryObject, QueuePtr};
-use opencl::enqueue;
+use api::{self, enqueue};
 use parenchyma::{Context, NativeContext, NativeMemory};
 
 use super::{OpenCLDevice, OpenCLMemory, OpenCL, OpenCLQueue, Result};
@@ -20,7 +19,7 @@ use super::{OpenCLDevice, OpenCLMemory, OpenCL, OpenCLQueue, Result};
 /// considered _reading_.
 #[derive(Clone, Debug)]
 pub struct OpenCLContext {
-    ptr: ContextPtr,
+    ptr: api::Context,
     selected_device: OpenCLDevice,
     queue: OpenCLQueue,
 }
@@ -33,8 +32,8 @@ impl Context for OpenCLContext {
     fn new(device: OpenCLDevice) -> Result<Self> {
 
         let device_ptr_vec = &vec![device.ptr.clone()];
-        let ptr = ContextPtr::new(&device_ptr_vec)?;
-        let queue = OpenCLQueue { ptr: QueuePtr::new(&ptr, &device.ptr, 0)? };
+        let ptr = api::Context::new(&device_ptr_vec)?;
+        let queue = OpenCLQueue { ptr: api::Queue::new(&ptr, &device.ptr, 0)? };
 
         Ok(OpenCLContext { ptr: ptr, selected_device: device, queue: queue })
     }
@@ -42,7 +41,7 @@ impl Context for OpenCLContext {
     /// Allocates memory
     fn allocate_memory(&self, size: usize) -> Result<OpenCLMemory> {
 
-        let mem_obj = MemoryObject::create_buffer(&self.ptr, size)?;
+        let mem_obj = api::Memory::create_buffer(&self.ptr, size)?;
 
         Ok(OpenCLMemory { obj: mem_obj })
     }

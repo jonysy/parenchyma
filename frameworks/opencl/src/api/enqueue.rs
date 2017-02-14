@@ -1,8 +1,7 @@
-use opencl_sys;
 use std::os::raw::c_void;
 use std::ptr;
-use error::{ErrorKind, Result};
-use super::{EventPtr, MemoryObject, QueuePtr};
+use super::error::Result;
+use super::{Event, Memory, Queue, sys};
 
 /// Enqueue commands to write to a buffer object from host memory.
 ///
@@ -12,12 +11,10 @@ use super::{EventPtr, MemoryObject, QueuePtr};
 ///                     and buffer must be created with the same OpenCL context.
 /// `buffer`          - Refers to a valid buffer object.
 /// `blocking_write`  - Indicates if the write operations are blocking or nonblocking.
-///
 ///                     If blocking_write is CL_TRUE, the OpenCL implementation copies the data 
 ///                     referred to by ptr and enqueues the write operation in the command-queue. 
 ///                     The memory pointed to by ptr can be reused by the application after 
 ///                     the clEnqueueWriteBuffer call returns.
-/// 
 ///                     If blocking_write is CL_FALSE, the OpenCL implementation will use ptr to 
 ///                     perform a nonblocking write. As the write is non-blocking the implementation 
 ///                     can return immediately. The memory pointed to by ptr cannot be reused by 
@@ -45,14 +42,14 @@ use super::{EventPtr, MemoryObject, QueuePtr};
 /// will not be possible for the application to query the status of this command or queue a wait 
 /// for this command to complete. 
 pub fn write_buffer(
-    command_queue:   &QueuePtr, 
-    buffer:          &MemoryObject, 
+    command_queue:   &Queue, 
+    buffer:          &Memory, 
     blocking_write:  bool, 
     offset:          usize,
     cb:              usize, 
     ptr:             *const c_void,
-    event_wait_list: &[EventPtr]) 
-    -> Result<EventPtr> {
+    event_wait_list: &[Event]) 
+    -> Result<Event> {
 
     unsafe {
 
@@ -61,15 +58,15 @@ pub fn write_buffer(
         let list = if num_events_in_wait_list == 0 {
             ptr::null()
         } else {
-            event_wait_list.as_ptr() as *const opencl_sys::cl_event
+            event_wait_list.as_ptr() as *const sys::cl_event
         };
 
-        let mut new_event = 0 as opencl_sys::cl_event;
+        let mut new_event = 0 as sys::cl_event;
 
         let blocking_write_u32 = if blocking_write { 1 } else { 0 };
 
-        let result = opencl_sys::clEnqueueWriteBuffer(
-            command_queue.0, 
+        let result = sys::clEnqueueWriteBuffer(
+            **command_queue, 
             buffer.0, 
             blocking_write_u32,
             offset,
@@ -80,26 +77,20 @@ pub fn write_buffer(
             &mut new_event
         );
 
-        match result {
-            opencl_sys::CLStatus::CL_SUCCESS => {
-                Ok(EventPtr(new_event))
-            },
-
-            e @ _ => Err((e.into(): ErrorKind).into())
-        }
+        result!(result => Ok(Event::from(new_event)))
     }
 }
 
 /// Enqueue commands to read from a buffer object to host memory.
 pub fn read_buffer(
-    command_queue:   &QueuePtr,
-    buffer:          &MemoryObject,
+    command_queue:   &Queue,
+    buffer:          &Memory,
     blocking_read:   bool,
     offset:          usize,
     cb:              usize,
     ptr:             *mut c_void,
-    event_wait_list: &[EventPtr])
-    -> Result<EventPtr> {
+    event_wait_list: &[Event])
+    -> Result<Event> {
 
 
     unsafe {
@@ -109,15 +100,15 @@ pub fn read_buffer(
         let list = if num_events_in_wait_list == 0 {
             ptr::null()
         } else {
-            event_wait_list.as_ptr() as *const opencl_sys::cl_event
+            event_wait_list.as_ptr() as *const sys::cl_event
         };
 
-        let mut new_event = 0 as opencl_sys::cl_event;
+        let mut new_event = 0 as sys::cl_event;
 
         let blocking_read_u32 = if blocking_read { 1 } else { 0 };
 
-        let result = opencl_sys::clEnqueueReadBuffer(
-            command_queue.0, 
+        let result = sys::clEnqueueReadBuffer(
+            **command_queue, 
             buffer.0, 
             blocking_read_u32,
             offset,
@@ -128,12 +119,6 @@ pub fn read_buffer(
             &mut new_event
         );
 
-        match result {
-            opencl_sys::CLStatus::CL_SUCCESS => {
-                Ok(EventPtr(new_event))
-            },
-
-            e @ _ => Err((e.into(): ErrorKind).into())
-        }
+        result!(result => Ok(Event::from(new_event)))
     }
 }

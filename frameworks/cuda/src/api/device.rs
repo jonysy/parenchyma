@@ -1,7 +1,7 @@
-use cuda_sys;
-use error::{Error, ErrorKind, Result};
 use std::ffi::CString;
 use super::Attribute;
+use super::sys;
+use super::error::{Error, ErrorKind, Result};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DeviceHandle(pub(super) i32);
@@ -15,8 +15,8 @@ impl DeviceHandle {
 
             let mut name = [0; LENGTH as usize];
 
-            match cuda_sys::cuDeviceGetName(name.as_mut_ptr(), LENGTH, self.0) {
-                cuda_sys::cudaError_enum::CUDA_SUCCESS => {
+            match sys::cuDeviceGetName(name.as_mut_ptr(), LENGTH, self.0) {
+                sys::cudaError_enum::CUDA_SUCCESS => {
                     let c_string = CString::from_raw(name.as_mut_ptr());
 
                     let st = c_string.into_string().map_err(|e| Error::new(ErrorKind::Unknown, e))?;
@@ -37,8 +37,8 @@ impl DeviceHandle {
         let mut pi = 0;
 
         unsafe {
-            match cuda_sys::cuDeviceGetAttribute(&mut pi, attribute, self.0) {
-                cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+            match sys::cuDeviceGetAttribute(&mut pi, attribute, self.0) {
+                sys::cudaError_enum::CUDA_SUCCESS => 
                     Ok(pi),
 
                 e @ _ =>

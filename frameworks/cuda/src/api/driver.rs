@@ -1,9 +1,7 @@
-use cuda_sys;
-use error::{Error, ErrorKind, Result};
 use std::os::raw::c_void;
 use std::ptr;
-use super::{ContextFlag, ContextHandle, DeviceHandle, Memory};
-
+use super::{ContextFlag, ContextHandle, DeviceHandle, Memory, sys};
+use super::error::{Error, ErrorKind, Result};
 
 /// Initialize the CUDA driver API.
 ///
@@ -25,10 +23,10 @@ use super::{ContextFlag, ContextHandle, DeviceHandle, Memory};
 /// Note that this function may also return error codes from previous, asynchronous launches.
 pub fn init() -> Result {
 
-    let result = unsafe { cuda_sys::cuInit(0) };
+    let result = unsafe { sys::cuInit(0) };
 
     match result {
-        cuda_sys::cudaError_enum::CUDA_SUCCESS => Ok(()),
+        sys::cudaError_enum::CUDA_SUCCESS => Ok(()),
 
         e @ _ => {
             let message = "An error occurred while attempting to initialize the CUDA driver API";
@@ -45,8 +43,8 @@ pub fn ndevices() -> Result<u32> {
     let mut ndevices = 0;
 
     unsafe {
-        match cuda_sys::cuDeviceGetCount(&mut ndevices) {
-            cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+        match sys::cuDeviceGetCount(&mut ndevices) {
+            sys::cudaError_enum::CUDA_SUCCESS => 
                 Ok(ndevices as u32),
 
             e @ _ => 
@@ -65,8 +63,8 @@ pub fn device(n: u32) -> Result<DeviceHandle> {
     let mut device_handle: i32 = 0;
 
     unsafe {
-        match cuda_sys::cuDeviceGet(&mut device_handle, n as i32) {
-            cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+        match sys::cuDeviceGet(&mut device_handle, n as i32) {
+            sys::cudaError_enum::CUDA_SUCCESS => 
                 Ok(DeviceHandle(device_handle)),
 
             e @ _ => 
@@ -84,8 +82,8 @@ pub fn create_context(f: ContextFlag, dev: &DeviceHandle) -> Result<ContextHandl
     unsafe {
         let mut ctx = ptr::null_mut();
 
-        match cuda_sys::cuCtxCreate_v2(&mut ctx, f as u32, dev.0) {
-            cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+        match sys::cuCtxCreate_v2(&mut ctx, f as u32, dev.0) {
+            sys::cudaError_enum::CUDA_SUCCESS => 
                 Ok(ContextHandle(ctx)),
 
             e @ _ =>
@@ -102,8 +100,8 @@ pub fn mem_alloc(byte_size: usize) -> Result<Memory> {
     unsafe {
         let mut dptr = 0u64;
 
-        match cuda_sys::cuMemAlloc_v2(&mut dptr, byte_size) {
-            cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+        match sys::cuMemAlloc_v2(&mut dptr, byte_size) {
+            sys::cudaError_enum::CUDA_SUCCESS => 
                 Ok(Memory(dptr)),
 
             e @ _ =>
@@ -119,8 +117,8 @@ pub fn mem_cpy_h_to_d(dst_device: &Memory, src_host: *const c_void, byte_count: 
 
     unsafe {
 
-        match cuda_sys::cuMemcpyHtoD_v2(dst_device.0, src_host, byte_count) {
-            cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+        match sys::cuMemcpyHtoD_v2(dst_device.0, src_host, byte_count) {
+            sys::cudaError_enum::CUDA_SUCCESS => 
                 Ok(()),
 
             e @ _ =>
@@ -136,8 +134,8 @@ pub fn mem_cpy_d_to_h(dst_host: *mut c_void, src_device: &Memory, byte_count: us
 
     unsafe {
 
-        match cuda_sys::cuMemcpyDtoH_v2(dst_host, src_device.0, byte_count) {
-            cuda_sys::cudaError_enum::CUDA_SUCCESS => 
+        match sys::cuMemcpyDtoH_v2(dst_host, src_device.0, byte_count) {
+            sys::cudaError_enum::CUDA_SUCCESS => 
                 Ok(()),
 
             e @ _ =>

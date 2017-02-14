@@ -1,7 +1,7 @@
-use opencl::MemoryObject;
+use api;
 
 /// Holds a OpenCL memory id and manages its deallocation
 #[derive(Debug)]
 pub struct OpenCLMemory {
-    pub(super) obj: MemoryObject,
+    pub(super) obj: api::Memory,
 }

@@ -1,12 +1,12 @@
 use std::mem;
 use std::marker::PhantomData;
 use std::ops::Deref;
-use super::{RVec, u64Map};
+use super::{RVec, U64Map};
 use super::super::{Context, Framework};
 use super::super::context::Action;
 use super::super::error::{Error, ErrorKind, Result};
 
-/// A shared tensor for memory management.
+/// A shared tensor for framework-agnostic, memory-aware, n-dimensional storage.
 ///
 /// Container that handles synchronization of `Memory` of type `T` and provides the functionality 
 /// for memory management across contexts.
@@ -35,7 +35,8 @@ use super::super::error::{Error, ErrorKind, Result};
 /// ```rust
 /// // TODO..
 /// ```
-pub struct Tensor<T> {
+#[derive(Debug)]
+pub struct SharedTensor<T> {
     /// The total number of indices.
     ///
     /// # Example
@@ -60,66 +61,25 @@ pub struct Tensor<T> {
     shape: Vec<usize>,
 
     rvec: RVec,
-    u64map: u64Map,
+    u64map: U64Map,
 
     phantom: PhantomData<T>,
 }
 
-impl<I, T> From<I> for Tensor<T> where I: Into<Vec<usize>> {
-
-    /// Create new `Tensor` by allocating memory for the context.
-    fn from(shape: I) -> Tensor<T> {
-
-        let shape = shape.into();
-        let rank = shape.len();
-        let capacity = shape.iter().fold(1, |s, &a| s * a);
-
-        Tensor {
-            rank: rank,
-            capacity: capacity,
-            shape: shape,
-            rvec: RVec::new(),
-            u64map: u64Map::new(),
-            phantom: PhantomData,
-        }
-    }
-}
-
-impl<T> Tensor<T> {
+impl<T> SharedTensor<T> {
 
     /// Returns the number of elements for which the tensor has been allocated.
     pub fn capacity(&self) -> usize {
         self.capacity
     }
 
+    /// Returns the allocated memory size in bytes.
     pub fn mem_size(capacity: usize) -> usize {
         mem::size_of::<T>() * capacity
     }
 
-    // FIXME: synchronize memory elsewhere if possible?
-    /// Drops memory allocation on the specified context. Returns error if
-    /// no memory has been allocated on this context.
-    pub fn drop_context<C>(&mut self, context: &C) -> Result where C: Context {
-        match self.get_location_index(context) {
-            Some(i) => {
-                self.rvec.remove(i);
-                let up_to_date = self.u64map.get();
-                let mask = (1 << i) - 1;
-                let lower = up_to_date & mask;
-                let upper = (up_to_date >> 1) & (!mask);
-                self.u64map.set(lower | upper);
-
-                Ok(())
-            },
-
-            _ => {
-                Err(ErrorKind::AllocatedMemoryNotFoundForContext.into())
-            }
-        }
-    }
-
     // Functions `read()`, `read_write()`, `write_only()` use `unsafe` to
-    // extend lifetime of retured reference to internally owned memory chunk.
+    // extend lifetime of returned reference to internally owned memory chunk.
     // Borrow guarantees that SharedTensor outlives all of its Tensors, and
     // there is only one mutable borrow. So we only need to make sure that
     // memory entries won't be dropped or moved while there are live Tensors.
@@ -205,6 +165,31 @@ impl<T> Tensor<T> {
         Ok(memory)
     }
 
+    // FIXME: synchronize memory elsewhere if possible?
+    /// Drops memory allocation on the specified context. Returns error if
+    /// no memory has been allocated on this context.
+    pub fn drop_context<C>(&mut self, context: &C) -> Result where C: Context {
+        match self.get_location_index(context) {
+            Some(i) => {
+                self.rvec.remove(i);
+                let up_to_date = self.u64map.get();
+                let mask = (1 << i) - 1;
+                let lower = up_to_date & mask;
+                let upper = (up_to_date >> 1) & (!mask);
+                self.u64map.set(lower | upper);
+
+                Ok(())
+            },
+
+            _ => {
+                Err(ErrorKind::AllocatedMemoryNotFoundForContext.into())
+            }
+        }
+    }
+
+    // ====================================================
+    // ====================================================
+
     // TODO: chose the best source to copy data from.
     // That would require some additional traits that return costs for
     // transferring data between different backends.
@@ -220,7 +205,7 @@ impl<T> Tensor<T> {
 
         let src_i = self.u64map.get().trailing_zeros() as usize;
 
-        assert!(src_i != u64Map::capacity);
+        assert!(src_i != U64Map::CAPACITY);
 
         // We need to borrow two different Vec elements: src and mut dst.
         // `Borrow` doesn't allow for that to be done in a straightforward way, so here is 
@@ -283,7 +268,7 @@ impl<T> Tensor<T> {
             return Ok(i);
         }
 
-        if self.rvec.len() == u64Map::capacity {
+        if self.rvec.len() == U64Map::CAPACITY {
 
             return Err(ErrorKind::BitMapCapacityExceeded.into());
         }
@@ -302,5 +287,25 @@ impl<T> Tensor<T> {
         self.rvec.position(|e| {
             match e.context.downcast_ref::<C>() { Some(ref c) if ctx.eq(c) => true, _ => false }
         })
+    }
+}
+
+impl<I, T> From<I> for SharedTensor<T> where I: Into<Vec<usize>> {
+
+    /// Create new `SharedTensor` by allocating memory for the context.
+    fn from(shape: I) -> SharedTensor<T> {
+
+        let shape = shape.into();
+        let rank = shape.len();
+        let capacity = shape.iter().fold(1, |s, &a| s * a);
+
+        SharedTensor {
+            rank: rank,
+            capacity: capacity,
+            shape: shape,
+            rvec: RVec::new(),
+            u64map: U64Map::new(),
+            phantom: PhantomData,
+        }
     }
 }

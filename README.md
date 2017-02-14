@@ -5,10 +5,31 @@
 Parenchyma started off as a hard fork of [Collenchyma][collenchyma-repo] (hence the name), an 
 extensible HPC framework developed by the [Autumn team] as well as an amazing group 
 of [contributors][collenchyma-contributors]. Aside from the name and overall design, the two 
-libraries are not the same (e.g., auto-sync (thanks to [@alexandermorozov](/../../issues/2))). 
+libraries are not exactly the same (e.g., auto-sync (thanks to [@alexandermorozov](/../../issues/2))). 
 Therefore, before migrating over, one should go through the documentation carefully as to not make 
 the mistake of misusing the framework. Not doing so may result in unintended behavior for 
 which Parenchyma developers/contributors are not responsible.
+
+Many of the original comments used for documentation purposes remain in the code base, along with 
+a few necessary additions/modifications.
+
+> Disclaimer: Parenchyma is currently undergoing extensive refactoring and improvement. Therefore, 
+> it is likely that many of the features available in the original Collenchyma project may not yet 
+> be available in the Parenchyma project. It is also likely that certain features may never be 
+> available in the Parenchyma project, as the different approaches that are currently being 
+> considered may prove to be better than the original approach.
+
+## Introduction
+
+Parenchyma is an extensible, pluggable, backend-agnostic framework for parallel, high-performance 
+computing with CUDA, OpenCL and common host CPU. It is fast, easy to build and allows you to execute 
+operations on almost any machine, even if it does not have CUDA or OpenCL compatible devices.
+
+Parenchyma abstracts over the different computing languages and APIs (Native, OpenCL, CUDA). 
+Thanks to easy parallelization, Parenchyma lets you run highly-performant code on servers, desktops 
+or mobile devices without the need to adapt your code for each machine. Parenchyma does 
+not require OpenCL or CUDA on the machine and automatically [falls back](/../../issues/15) to the 
+native host CPU, making your application highly flexible.
 
 ## Usage
 

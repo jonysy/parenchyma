@@ -1,19 +1,28 @@
+//! Types for working with errors.
+
 use std::{error, fmt, result};
 use super::Framework;
 
 /// A specialized `Result` type.
 pub type Result<T = (), E = Error> = result::Result<T, E>;
 
+/// The core error type used in Parenchyma.
 #[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
     payload: Option<Box<error::Error + Send + Sync>>,
 }
 
+/// A set of general categories.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum ErrorKind {
     /// A framework-specific error.
-    Framework { name: &'static str },
+    Framework { 
+        /// The name of the framework. Consider creating an framework-specific error by calling 
+        /// the `Error::from_framework` function, rather than constructing an `Error` using 
+        /// this variant.
+        name: &'static str
+    },
     /// Maximum number of backing memories has been reached (`BitMap` - type alias for `u64`).
     BitMapCapacityExceeded,
     /// Invalid reshaped tensor size.
@@ -77,6 +86,7 @@ impl Error {
         Self::_new(kind.into(), Some(payload.into()))
     }
 
+    /// Creates a new framework-specific error.
     pub fn from_framework<F>(error: F::E) -> Error where F: Framework {
 
         let kind = ErrorKind::Framework { name: F::FRAMEWORK_NAME };
@@ -93,6 +103,7 @@ impl Error {
         }
     }
 
+    /// Returns a reference to the inner error wrapped by this error (if any).
     pub fn get_ref(&self) -> Option<&(error::Error + Send + Sync + 'static)> {
         use std::ops::Deref;
 
