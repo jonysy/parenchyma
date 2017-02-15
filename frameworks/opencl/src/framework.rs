@@ -14,7 +14,7 @@ use super::{OpenCLContext, OpenCLDevice, OpenCLMemory, OpenCLPlatform, Result};
 ///
 /// # fn main() {
 /// let framework = OpenCL::new().expect("failed to construct framework");
-/// let selection = framework.available_platforms[0].available_devices[0].clone();
+/// let selection = framework.available_platforms[0].available_devices.clone();
 /// let backend = Backend::new(framework, selection).expect("failed to construct backend");
 /// # }
 /// ```
@@ -32,7 +32,7 @@ impl Framework for OpenCL {
     type Context = OpenCLContext;
 
     /// The device representation.
-    type D = OpenCLDevice;
+    type Device = OpenCLDevice;
 
     /// An error type associated with the framework.
     type E = api::error::Error;

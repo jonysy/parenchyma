@@ -634,3 +634,11 @@ impl Into<sys::cl_device_id> for Device {
         self.0
     }
 }
+
+impl PartialEq<Device> for Device {
+
+    fn eq(&self, other: &Device) -> bool {
+
+        self.0 == other.0
+    }
+}

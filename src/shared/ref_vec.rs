@@ -1,12 +1,12 @@
 use std::any::Any;
 use std::cell::RefCell;
-use super::super::context::ObjSafeCtx;
+use super::super::device::ObjSafeDev;
 
 #[derive(Debug)]
 pub struct RVec { pub re: RefCell<Vec<Location>> }
 
 #[derive(Debug)]
-pub struct Location { pub context: Box<ObjSafeCtx>, pub memory: Box<Any> }
+pub struct Location { pub device: Box<ObjSafeDev>, pub memory: Box<Any> }
 
 impl RVec {
 
@@ -20,8 +20,8 @@ impl RVec {
         self.re.borrow().iter().position(predicate)
     }
 
-    pub fn push(&self, context: Box<ObjSafeCtx>, memory: Box<Any>) {
-        self.re.borrow_mut().push(Location { context: context, memory: memory })
+    pub fn push(&self, device: Box<ObjSafeDev>, memory: Box<Any>) {
+        self.re.borrow_mut().push(Location { device: device, memory: memory })
     }
 
     pub fn len(&self) -> usize {

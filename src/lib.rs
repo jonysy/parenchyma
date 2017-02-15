@@ -95,16 +95,16 @@
 extern crate alloc;
 
 pub mod error;
-pub use self::context::Context;
 pub use self::backend::Backend;
-pub use self::category::Category;
+pub use self::context::Context;
+pub use self::device::{Device, DeviceKind};
 pub use self::framework::Framework;
 pub use self::native::{Native, NativeContext, NativeDevice, NativeMemory};
 pub use self::shared::SharedTensor;
 
 mod context;
 mod backend;
-mod category;
+mod device;
 mod framework;
 mod native;
 mod shared;

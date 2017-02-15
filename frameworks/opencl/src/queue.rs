@@ -1,6 +1,7 @@
 use api;
 
 // A queue is used by the host application to submit work to a device.
+// command queues are associated with devices within a context
 
 /// A command queue
 ///
@@ -23,4 +24,11 @@ use api;
 #[derive(Clone, Debug)]
 pub struct OpenCLQueue {
     pub(super) ptr: api::Queue,
+}
+
+impl OpenCLQueue {
+
+    pub fn ptr(&self) -> &api::Queue {
+        &self.ptr
+    }
 }

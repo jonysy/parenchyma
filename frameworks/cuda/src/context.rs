@@ -31,12 +31,12 @@ impl Context for CudaContext {
 
     fn synch_in(&self, destn: &mut CudaMemory, _: &NativeContext, src: &NativeMemory) -> Result {
 
-        driver::mem_cpy_h_to_d(&destn.dptr, src.as_slice().as_ptr(), src.size())
+        driver::mem_cpy_h_to_d(&destn.dptr, src.as_slice().as_ptr(), src.len())
     }
 
     fn synch_out(&self, src: &CudaMemory, _: &NativeContext, destn: &mut NativeMemory) -> Result {
 
-        driver::mem_cpy_d_to_h(destn.as_mut_slice().as_mut_ptr(), &src.dptr, destn.size())
+        driver::mem_cpy_d_to_h(destn.as_mut_slice().as_mut_ptr(), &src.dptr, destn.len())
     }
 }
 

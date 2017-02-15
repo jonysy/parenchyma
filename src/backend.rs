@@ -26,7 +26,7 @@ use super::error::{Error, Result};
 /// let framework = Native::new().expect("failed to initialize framework");
 ///
 /// // Available devices can be obtained through the framework.
-/// let selection = framework.available_devices[0].clone();
+/// let selection = framework.available_devices.clone();
 ///
 /// // Create a ready to go backend from the framework.
 /// let backend = Backend::new(framework, selection).expect("failed to construct backend");
@@ -54,7 +54,7 @@ impl<F> Backend<F> where F: Framework {
 
     /// Construct a `Backend` from a [`framework`](./trait.Framework.html), such as OpenCL, CUDA, etc.,
     /// and a `selection` of devices.
-    pub fn new(framework: F, selection: F::D) -> Result<Self> {
+    pub fn new(framework: F, selection: Vec<F::Device>) -> Result<Self> {
 
         let context = F::Context::new(selection).map_err(Error::from_framework::<F>)?;
         let backend = Backend { framework: framework, context: context};
@@ -65,13 +65,18 @@ impl<F> Backend<F> where F: Framework {
     /// Constructs the default `Backend`.
     pub fn default() -> Result<Self> {
         let framework = F::new().map_err(Error::from_framework::<F>)?;
-        let default_selection = framework.default_selection().remove(0);
+        let default_selection = framework.default_selection();
         Self::new(framework, default_selection)
     }
 
     /// Returns the context.
     pub fn context(&self) -> &F::Context {
         &self.context
+    }
+
+    /// Returns a list of devices encapsulated by the context.
+    pub fn devices(&self) -> &[F::Device] {
+        self.context.devices()
     }
 
     /// Returns the framework.

@@ -1,11 +1,13 @@
-use api::{self, enqueue};
-use parenchyma::{Context, NativeContext, NativeMemory};
+use api;
+use parenchyma::Context;
 
-use super::{OpenCLDevice, OpenCLMemory, OpenCL, OpenCLQueue, Result};
+use super::{OpenCLDevice, OpenCL, OpenCLQueue, Result};
 
 // notes:
 // shared context if more than one device is passed in
 // Multi-platforms contexts are not supported in OpenCL.
+
+// TODO prevent mixing devices from different contexts
 
 /// A context is responsible for managing OpenCL objects and resources.
 ///
@@ -20,8 +22,13 @@ use super::{OpenCLDevice, OpenCLMemory, OpenCL, OpenCLQueue, Result};
 #[derive(Clone, Debug)]
 pub struct OpenCLContext {
     ptr: api::Context,
-    selected_device: OpenCLDevice,
-    queue: OpenCLQueue,
+    selected_devices: Vec<OpenCLDevice>,
+}
+
+impl OpenCLContext {
+    pub fn ptr(&self) -> &api::Context {
+        &self.ptr
+    }
 }
 
 impl Context for OpenCLContext {
@@ -29,49 +36,22 @@ impl Context for OpenCLContext {
     type F = OpenCL;
 
     /// Constructs a context from a selection of devices.
-    fn new(device: OpenCLDevice) -> Result<Self> {
+    fn new(mut devices: Vec<OpenCLDevice>) -> Result<Self> {
 
-        let device_ptr_vec = &vec![device.ptr.clone()];
-        let ptr = api::Context::new(&device_ptr_vec)?;
-        let queue = OpenCLQueue { ptr: api::Queue::new(&ptr, &device.ptr, 0)? };
+        let raw_devices: Vec<_> = devices.iter().map(|d| d.ptr.clone()).collect();
 
-        Ok(OpenCLContext { ptr: ptr, selected_device: device, queue: queue })
+        let raw_context = api::Context::new(&raw_devices)?;
+
+        for device in devices.iter_mut() {
+            let queue = OpenCLQueue { ptr: api::Queue::new(&raw_context, &device.ptr, 0)? };
+
+            device.prepare(raw_context.clone(), queue);
+        }
+
+        Ok(OpenCLContext { ptr: raw_context, selected_devices: devices })
     }
 
-    /// Allocates memory
-    fn allocate_memory(&self, size: usize) -> Result<OpenCLMemory> {
-
-        let mem_obj = api::Memory::create_buffer(&self.ptr, size)?;
-
-        Ok(OpenCLMemory { obj: mem_obj })
-    }
-
-    fn synch_in(&self, destn: &mut OpenCLMemory, _: &NativeContext, src: &NativeMemory) -> Result {
-
-        let s_size = src.size();
-        let s_ptr = src.as_slice().as_ptr();
-
-        let _ = enqueue::write_buffer(&self.queue.ptr, &destn.obj, true, 0, s_size, s_ptr, &[])?;
-
-        Ok(())
-    }
-
-    fn synch_out(&self, src: &OpenCLMemory, _: &NativeContext, destn: &mut NativeMemory) -> Result {
-
-        let d_size = destn.size();
-        let d_ptr = destn.as_mut_slice().as_mut_ptr();
-
-        let _ = enqueue::read_buffer(&self.queue.ptr, &src.obj, true, 0, d_size, d_ptr, &[])?;
-
-        Ok(())
+    fn devices(&self) -> &[OpenCLDevice] {
+        &self.selected_devices
     }
 }
-
-impl PartialEq for OpenCLContext {
-
-    fn eq(&self, other: &Self) -> bool {
-        self.ptr == other.ptr
-    }
-}
-
-impl Eq for OpenCLContext { }

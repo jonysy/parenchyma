@@ -1,5 +1,5 @@
 use std::error::Error;
-use super::Context;
+use super::{Context, Device};
 
 /// A trait implemented for all frameworks. `Framework`s contain a list of all available devices as 
 /// well as other objects specific to the implementor.
@@ -17,7 +17,7 @@ pub trait Framework: Sized {
     type Context: Context<F = Self>;
 
     /// The device representation.
-    type D;
+    type Device: Device<F = Self>;
 
     /// An error type associated with the framework.
     type E: 'static + Error + Send + Sync;
@@ -29,5 +29,5 @@ pub trait Framework: Sized {
     fn new() -> Result<Self, Self::E>;
 
     /// Returns a default selection of devices available to the framework.
-    fn default_selection(&self) -> Vec<Self::D>;
+    fn default_selection(&self) -> Vec<Self::Device>;
 }

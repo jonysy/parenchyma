@@ -2,21 +2,21 @@ use std::mem;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use super::{RVec, U64Map};
-use super::super::{Context, Framework};
-use super::super::context::Action;
+use super::super::{Device, Framework};
+use super::super::device::Action;
 use super::super::error::{Error, ErrorKind, Result};
 
 /// A shared tensor for framework-agnostic, memory-aware, n-dimensional storage.
 ///
 /// Container that handles synchronization of `Memory` of type `T` and provides the functionality 
-/// for memory management across contexts.
+/// for memory management across devices.
 ///
 /// A tensor is essentially a generalization of vectors. A Parenchyma tensor tracks the memory 
-/// copies of the numeric data of a tensor across the context of the backend and manages:
+/// copies of the numeric data of a tensor across the device of the backend and manages:
 ///
 /// * the location of these memory copies
 /// * the location of the latest memory copy and
-/// * the synchronization of memory copies between contexts
+/// * the synchronization of memory copies between devices
 ///
 /// This is important, as it provides a unified data interface for executing tensor operations 
 /// on CUDA, OpenCL and common host CPU.
@@ -84,16 +84,16 @@ impl<T> SharedTensor<T> {
     // there is only one mutable borrow. So we only need to make sure that
     // memory entries won't be dropped or moved while there are live Tensors.
     // It's quite easy to do: by convention we only allow to remove elements from
-    // `self.entries` in methods with `&mut self`. Since we store context's memory
+    // `self.entries` in methods with `&mut self`. Since we store device's memory
     // objects in a Box, reference to it won't change during Vec realentries.
 
-    /// Get memory for reading for the specified `context`.
+    /// Get memory for reading for the specified `device`.
     ///
     /// ## Note
     ///
     /// Can fail if memory allocation fails or if tensor wasn't initialized yet.
-    pub fn read<'m, C>(&'m self, context: &C) 
-        -> Result<&'m <C::F as Framework>::M> where C: Context
+    pub fn read<'m, D>(&'m self, device: &D) 
+        -> Result<&'m <D::F as Framework>::M> where D: Device
     {
 
         if self.u64map.get() == 0 {
@@ -101,24 +101,24 @@ impl<T> SharedTensor<T> {
             return Err(ErrorKind::UninitializedMemory.into());
         }
 
-        let i = self.get_or_create_location_index(context)?;
+        let i = self.get_or_create_location_index(device)?;
         self.sync_if_needed(i)?;
         self.u64map.set(self.u64map.get() | (1 << i));
 
         let re = self.rvec.re.borrow();
-        let memory: &<C::F as Framework>::M = re[i].memory.deref().downcast_ref().ok_or(
+        let memory: &<D::F as Framework>::M = re[i].memory.deref().downcast_ref().ok_or(
             Error::new(ErrorKind::Other, "Broken invariant: wrong memory type")
         )?;
 
-        let memory: &'m <C::F as Framework>::M = unsafe { mem::transmute(memory) };
+        let memory: &'m <D::F as Framework>::M = unsafe { mem::transmute(memory) };
 
         Ok(memory)
     }
 
-    /// Get memory for reading and writing for the specified `context`.
+    /// Get memory for reading and writing for the specified `device`.
     /// Can fail if memory allocation fails, or if tensor wasn't initialized yet.
-    pub fn read_write<'m, C>(&'m self, context: &C) 
-        -> Result<&'m mut <C::F as Framework>::M> where C: Context
+    pub fn read_write<'m, D>(&'m self, device: &D) 
+        -> Result<&'m mut <D::F as Framework>::M> where D: Device
     {
 
         if self.u64map.get() == 0 {
@@ -126,16 +126,16 @@ impl<T> SharedTensor<T> {
             return Err(ErrorKind::UninitializedMemory.into());
         }
 
-        let i = self.get_or_create_location_index(context)?;
+        let i = self.get_or_create_location_index(device)?;
         self.sync_if_needed(i)?;
         self.u64map.set(1 << i);
 
         let mut re = self.rvec.re.borrow_mut();
-        let memory: &mut <C::F as Framework>::M = re[i].memory.as_mut().downcast_mut().ok_or(
+        let memory: &mut <D::F as Framework>::M = re[i].memory.as_mut().downcast_mut().ok_or(
             Error::new(ErrorKind::Other, "Broken invariant: wrong memory type")
         )?;
 
-        let memory: &'m mut <C::F as Framework>::M = unsafe { mem::transmute(memory) };
+        let memory: &'m mut <D::F as Framework>::M = unsafe { mem::transmute(memory) };
 
         Ok(memory)
     }
@@ -148,28 +148,28 @@ impl<T> SharedTensor<T> {
     /// uninitialized data later. If caller has failed to overwrite memory,
     /// for some reason, it must call `invalidate()` to return vector to
     /// uninitialized state.
-    pub fn write_only<'m,  C>(&'m mut self, context: &C) 
-        -> Result<&'m mut <C::F as Framework>::M> where C: Context
+    pub fn write_only<'m,  D>(&'m mut self, device: &D) 
+        -> Result<&'m mut <D::F as Framework>::M> where D: Device
     {
 
-        let i = self.get_or_create_location_index(context)?;
+        let i = self.get_or_create_location_index(device)?;
         self.u64map.set(1 << i);
 
         let mut re = self.rvec.re.borrow_mut();
-        let memory: &mut <C::F as Framework>::M = re[i].memory.as_mut().downcast_mut().ok_or(
+        let memory: &mut <D::F as Framework>::M = re[i].memory.as_mut().downcast_mut().ok_or(
             Error::new(ErrorKind::Other, "Broken invariant: wrong memory type")
         )?;
 
-        let memory: &'m mut <C::F as Framework>::M = unsafe { mem::transmute(memory) };
+        let memory: &'m mut <D::F as Framework>::M = unsafe { mem::transmute(memory) };
 
         Ok(memory)
     }
 
     // FIXME: synchronize memory elsewhere if possible?
-    /// Drops memory allocation on the specified context. Returns error if
-    /// no memory has been allocated on this context.
-    pub fn drop_context<C>(&mut self, context: &C) -> Result where C: Context {
-        match self.get_location_index(context) {
+    /// Drops memory allocation on the specified device. Returns error if
+    /// no memory has been allocated on this device.
+    pub fn drop_device<D>(&mut self, device: &D) -> Result where D: Device {
+        match self.get_location_index(device) {
             Some(i) => {
                 self.rvec.remove(i);
                 let up_to_date = self.u64map.get();
@@ -182,7 +182,7 @@ impl<T> SharedTensor<T> {
             },
 
             _ => {
-                Err(ErrorKind::AllocatedMemoryNotFoundForContext.into())
+                Err(ErrorKind::AllocatedMemoryNotFoundForDevice.into()) // TODO more info on dev
             }
         }
     }
@@ -234,11 +234,11 @@ impl<T> SharedTensor<T> {
         {
             let read = Action::Read {
                 memory: src_loc.memory.deref(),  
-                destn_context: dst_loc.context.deref(),  
+                destn_device: dst_loc.device.deref(),  
                 destn_memory: dst_loc.memory.as_mut()
             };
 
-            match src_loc.context.synch(read) {
+            match src_loc.device.synch(read) {
         
                 Err(ref e) if e.kind() == ErrorKind::NoAvailableSynchronizationRouteFound => { },
 
@@ -249,21 +249,21 @@ impl<T> SharedTensor<T> {
         {
             let write = Action::Write {
                 memory: dst_loc.memory.as_mut(),  
-                source_context: src_loc.context.deref(),  
+                source_device: src_loc.device.deref(),  
                 source_memory: src_loc.memory.deref()
             };
 
-            dst_loc.context.synch(write)
+            dst_loc.device.synch(write)
         }
 
         // TODO: try transfer indirectly via Native backend
     }
 
-    /// Looks up `context` in `self.entries` and returns its index. If lookup fails then new 
+    /// Looks up `device` in `self.entries` and returns its index. If lookup fails then new 
     /// location is created and its index is returned.
-    fn get_or_create_location_index<C>(&self, context: &C) -> Result<usize> where C: Context {
+    fn get_or_create_location_index<D>(&self, device: &D) -> Result<usize> where D: Device {
 
-        if let Some(i) = self.get_location_index(context) {
+        if let Some(i) = self.get_location_index(device) {
 
             return Ok(i);
         }
@@ -275,24 +275,24 @@ impl<T> SharedTensor<T> {
 
         let size = Self::mem_size(self.capacity);
 
-        let memory = context.allocate_memory(size).map_err(Error::from_framework::<C::F>)?;
+        let memory = device.allocate_memory(size).map_err(Error::from_framework::<D::F>)?;
 
-        self.rvec.push(Box::new(context.clone()), Box::new(memory));
+        self.rvec.push(Box::new(device.clone()), Box::new(memory));
 
         Ok(self.rvec.len() - 1)
     }
 
-    fn get_location_index<C>(&self, ctx: &C) -> Option<usize> where C: Context {
+    fn get_location_index<D>(&self, ctx: &D) -> Option<usize> where D: Device {
 
         self.rvec.position(|e| {
-            match e.context.downcast_ref::<C>() { Some(ref c) if ctx.eq(c) => true, _ => false }
+            match e.device.downcast_ref::<D>() { Some(ref c) if ctx.eq(c) => true, _ => false }
         })
     }
 }
 
 impl<I, T> From<I> for SharedTensor<T> where I: Into<Vec<usize>> {
 
-    /// Create new `SharedTensor` by allocating memory for the context.
+    /// Create new `SharedTensor` by allocating memory for the device.
     fn from(shape: I) -> SharedTensor<T> {
 
         let shape = shape.into();

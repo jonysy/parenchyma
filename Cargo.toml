@@ -13,7 +13,5 @@ unstable_alloc = [] # faster but unstable memory allocation on native machines
 members = [
     "./frameworks/cuda",
     "./frameworks/opencl",
-
-    # Backend extensions
-    "./extensions/array",
+    "./frameworks/native"
 ]

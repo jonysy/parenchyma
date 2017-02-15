@@ -29,8 +29,8 @@ pub enum ErrorKind {
     InvalidReshapedTensorSize,
     /// An error returned when attempting to access uninitialized memory.
     UninitializedMemory,
-    /// Memory allocation was not found for a provided `Context`.
-    AllocatedMemoryNotFoundForContext,
+    /// Memory allocation was not found for a provided `Device`.
+    AllocatedMemoryNotFoundForDevice,
     /// An error occurred while attempting to synchronize memory.
     MemorySynchronizationFailed,
     /// A memory synchronization route was requested, but no available synchronization route was found.
@@ -56,7 +56,7 @@ impl ErrorKind {
             BitMapCapacityExceeded => "the maximum number of backing memories has been reached",
             InvalidReshapedTensorSize => "size of the provided shape is not equal to the size of the current shape",
             UninitializedMemory => "uninitialized memory",
-            AllocatedMemoryNotFoundForContext => "memory allocation was not found for the provided context",
+            AllocatedMemoryNotFoundForDevice => "memory allocation was not found for the provided device",
             MemorySynchronizationFailed => "memory synchronization failed",
             NoAvailableSynchronizationRouteFound => "no available memory synchronization route",
             MemoryAllocationFailed => "memory allocation failed",

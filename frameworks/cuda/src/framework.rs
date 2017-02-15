@@ -1,8 +1,9 @@
 use api::driver;
 use api::error::{Error, ErrorKind};
-use parenchyma::{Framework, Processor};
+use parenchyma::{Framework, Category};
 use super::{CudaContext, CudaDevice, CudaMemory, Result};
 
+#[derive(Debug)]
 pub struct Cuda {
     available_devices: Vec<CudaDevice>,
 }
@@ -41,7 +42,7 @@ impl Framework for Cuda {
             devices.push(CudaDevice {
                 name: h.name()?,
                 multiprocessors: h.multiprocessor_count()?,
-                processor: Processor::Gpu,
+                category: Category::Gpu,
                 handle: h,
             });
         }
