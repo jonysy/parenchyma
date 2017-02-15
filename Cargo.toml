@@ -2,7 +2,7 @@
 name = "parenchyma"
 version = "0.0.2"
 authors = ["Jony <jonysy@users.noreply.github.com>"]
-keywords = ["backend", "computation", "opencl", "cuda", "hpc", "high-performance-computing"]
+keywords = ["backend", "computation", "opencl", "cuda", "hpc"]
 categories = []
 description = "A high-performance computing (HPC) framework"
 documentation = "https://docs.rs/parenchyma"

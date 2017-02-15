@@ -1,5 +1,8 @@
 # parenchyma
 
+![Project Status](https://img.shields.io/badge/status-pre--alpha-green.svg)
+[![](http://meritbadge.herokuapp.com/parenchyma)](https://crates.io/crates/parenchyma)
+[![License](https://img.shields.io/crates/l/parenchyma.svg)](#license)
 [![Join the chat](https://badges.gitter.im/lychee-eng/parenchyma.svg)](https://gitter.im/lychee-eng/parenchyma)
 
 Parenchyma started off as a hard fork of [Collenchyma][collenchyma-repo] (hence the name), an 
