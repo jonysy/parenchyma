@@ -11,7 +11,7 @@ impl Memory {
     pub fn create_buffer(context: &Context, size: usize) -> Result<Memory> {
 
         unsafe {
-            
+            // TODO https://streamcomputing.eu/blog/2013-02-03/opencl-basics-flags-for-the-creating-memory-objects/
             let flags = sys::CL_MEM_READ_WRITE;
             let host_ptr = ptr::null_mut();
 
