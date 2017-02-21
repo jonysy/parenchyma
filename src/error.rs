@@ -1,7 +1,6 @@
 //! Types for working with errors.
 
 use std::{error, fmt, result};
-use super::Framework;
 
 /// A specialized `Result` type.
 pub type Result<T = (), E = Error> = result::Result<T, E>;
@@ -86,13 +85,13 @@ impl Error {
         Self::_new(kind.into(), Some(payload.into()))
     }
 
-    /// Creates a new framework-specific error.
-    pub fn from_framework<F>(error: F::E) -> Error where F: Framework {
+    // /// Creates a new framework-specific error.
+    // pub fn from_framework<F>(error: F::E) -> Error where F: Framework {
 
-        let kind = ErrorKind::Framework { name: F::FRAMEWORK_NAME };
+    //     let kind = ErrorKind::Framework { name: F::FRAMEWORK_NAME };
 
-        Self::_new(kind, Some(Box::new(error)))
-    }
+    //     Self::_new(kind, Some(Box::new(error)))
+    // }
 
     // "De-generization" technique..
     fn _new(kind: ErrorKind, payload: Option<Box<error::Error + Send + Sync>>) -> Error {

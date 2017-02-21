@@ -1,5 +1,4 @@
-use super::{Context, Framework};
-use super::error::{Error, Result};
+use super::ContextView;
 
 /// The heart of Parenchyma - provides an interface for running parallel computations on one or 
 /// more devices.
@@ -45,42 +44,33 @@ use super::error::{Error, Result};
 /// // ..
 /// ```
 #[derive(Debug)]
-pub struct Backend<F: Framework> {
-    framework: F,
-    context: F::Context,
-}
+pub struct Backend { context: ContextView }
 
-impl<F> Backend<F> where F: Framework {
-
+impl Default for Backend {
     /// Construct a `Backend` from a [`framework`](./trait.Framework.html), such as OpenCL, CUDA, etc.,
     /// and a `selection` of devices.
-    pub fn new(framework: F, selection: Vec<F::Device>) -> Result<Self> {
+    fn default() -> Backend {
+        use super::opencl::{OpenCL, OpenCLContext};
 
-        let context = F::Context::new(selection).map_err(Error::from_framework::<F>)?;
-        let backend = Backend { framework: framework, context: context};
+        let try_opencl_context = OpenCL::try_new().and_then(|frwk|
+            OpenCLContext::new(frwk.available_platforms[0].available_devices.clone())
+        );
 
-        Ok(backend)
-    }
+        match try_opencl_context {
+            Ok(opencl_context) => Backend { context: ContextView::OpenCL(opencl_context) },
 
-    /// Constructs the default `Backend`.
-    pub fn default() -> Result<Self> {
-        let framework = F::new().map_err(Error::from_framework::<F>)?;
-        let default_selection = framework.default_selection();
-        Self::new(framework, default_selection)
-    }
+            Err(opencl_error) => {
+                use super::native::{Native, NativeContext};
 
-    /// Returns the context.
-    pub fn context(&self) -> &F::Context {
-        &self.context
-    }
+                error!("[OpenCL] {}", opencl_error);
 
-    /// Returns a list of devices encapsulated by the context.
-    pub fn devices(&self) -> &[F::Device] {
-        self.context.devices()
-    }
+                let native_frwk = Native::new();
+                let native_context = NativeContext::new(native_frwk.available_devices);
 
-    /// Returns the framework.
-    pub fn framework(&self) -> &F {
-        &self.framework
+                Backend {
+                    context: ContextView::Native(native_context),
+                }
+            }
+        }
     }
 }

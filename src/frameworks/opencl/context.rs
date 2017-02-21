@@ -1,7 +1,5 @@
-use api;
-use parenchyma::Context;
-
-use super::{OpenCLDevice, OpenCL, OpenCLQueue, Result};
+use super::{OpenCLDevice, OpenCLQueue, Result};
+use super::api;
 
 // notes:
 // shared context if more than one device is passed in
@@ -26,17 +24,13 @@ pub struct OpenCLContext {
 }
 
 impl OpenCLContext {
-    pub fn ptr(&self) -> &api::Context {
-        &self.ptr
-    }
-}
-
-impl Context for OpenCLContext {
-    /// The framework associated with this context.
-    type F = OpenCL;
 
     /// Constructs a context from a selection of devices.
-    fn new(mut devices: Vec<OpenCLDevice>) -> Result<Self> {
+    ///
+    /// # Arguments
+    ///
+    /// * `devices` - a list of devices.
+    pub fn new(mut devices: Vec<OpenCLDevice>) -> Result<Self> {
 
         let raw_devices: Vec<_> = devices.iter().map(|d| d.ptr.clone()).collect();
 
@@ -51,7 +45,11 @@ impl Context for OpenCLContext {
         Ok(OpenCLContext { ptr: raw_context, selected_devices: devices })
     }
 
-    fn devices(&self) -> &[OpenCLDevice] {
+    pub fn devices(&self) -> &[OpenCLDevice] {
         &self.selected_devices
+    }
+
+    pub fn ptr(&self) -> &api::Context {
+        &self.ptr
     }
 }

@@ -1,4 +1,4 @@
-use api;
+use super::api;
 
 // A queue is used by the host application to submit work to a device.
 // command queues are associated with devices within a context

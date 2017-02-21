@@ -40,12 +40,6 @@
 //! availability, which gives us the freedom to write code once and deploy it on different machines 
 //! where it will execute on the most potent hardware by default.
 //!
-//! ### Frameworks
-//!
-//! The default framework is simply the host CPU for common computation. To make use of other
-//! devices such as GPUs, you may choose a GPGPU framework (such as OpenCL or CUDA) to access the 
-//! processing capabilities of the device(s).
-//!
 //! ### Extensions
 //!
 //! Operations are introduced by a Parenchyma extension. An extension extends your backend with 
@@ -91,34 +85,26 @@
 //! [Autumn]: https://github.com/autumnai
 
 #![cfg_attr(feature = "unstable_alloc", feature(alloc))]
-
-// #![deny(missing_docs,
-//         missing_debug_implementations, missing_copy_implementations,
-//         /* trivial_casts, */ trivial_numeric_casts,
-//         unused_import_braces, unused_qualifications)]
-
-#![feature(associated_consts, libc, pub_restricted, type_ascription, untagged_unions)]
-
-#[macro_use] extern crate enum_primitive;
-#[macro_use] extern crate log;
+#![deny(missing_docs,
+        missing_debug_implementations, missing_copy_implementations,
+        /* trivial_casts, */ trivial_numeric_casts,
+        unused_import_braces, unused_qualifications)]
+#![feature(associated_consts, get_type_id, pub_restricted)]
 
 #[cfg(feature = "unstable_alloc")]
 extern crate alloc;
-extern crate libc;
 
+pub mod error;
 pub use self::backend::Backend;
-pub use self::context::ContextView;
-pub use self::device::{DeviceKind, DeviceView};
-pub use self::error::{Error, ErrorKind, Result};
-pub use self::frameworks::{native, opencl};
-pub use self::memory::MemoryView;
-// pub use self::shared::SharedTensor;
+pub use self::context::Context;
+pub use self::device::{Device, DeviceKind};
+pub use self::framework::Framework;
+pub use self::native::{Native, NativeContext, NativeDevice, NativeMemory};
+pub use self::shared::SharedTensor;
 
-mod backend;
 mod context;
+mod backend;
 mod device;
-mod error;
-// mod framework;
-mod frameworks;
-mod memory;
-// mod shared;
+mod framework;
+mod native;
+mod shared;

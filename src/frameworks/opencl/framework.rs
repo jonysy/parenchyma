@@ -1,6 +1,6 @@
-use api;
-use parenchyma::Framework;
-use super::{OpenCLContext, OpenCLDevice, OpenCLMemory, OpenCLPlatform, Result};
+use super::{OpenCLPlatform, Result};
+use super::api;
+use super::super::super::{Error, ErrorKind};
 
 /// Provides the OpenCL framework.
 ///
@@ -24,29 +24,12 @@ pub struct OpenCL {
     pub available_platforms: Vec<OpenCLPlatform>,
 }
 
-impl Framework for OpenCL {
+impl OpenCL {
     /// The name of the framework.
     const FRAMEWORK_NAME: &'static str = "OPEN_CL";
-
-    /// The context representation.
-    type Context = OpenCLContext;
-
-    /// The device representation.
-    type Device = OpenCLDevice;
-
-    /// An error type associated with the framework.
-    type E = api::error::Error;
-
-    /// The memory representation.
-    ///
-    /// Memory objects are OpenCL data that can be moved on and off devices and can be classified as:
-    ///
-    /// * Buffers - Contiguous chunks of memory (arrays, pointers, structs). read/write capable
-    /// * Images - Opaque 2D or 3D objects. Can either read or written in a kernel, but not both
-    type M = OpenCLMemory;
-
+    
     /// Initializes the framework.
-    fn new() -> Result<Self> {
+    pub fn try_new() -> Result<Self> {
         let mut platform_ptrs = api::platform_ids()?;
         let capacity = platform_ptrs.len();
         let mut available_platforms = Vec::with_capacity(capacity);
@@ -60,9 +43,12 @@ impl Framework for OpenCL {
 
         Ok(OpenCL { available_platforms: available_platforms })
     }
+}
 
-    /// Returns a default selection of devices for the framework.
-    fn default_selection(&self) -> Vec<OpenCLDevice> {
-        self.available_platforms[0].available_devices.clone()
+impl From<api::error::Error> for Error {
+
+    fn from(e: api::error::Error) -> Self {
+
+        Error::new(ErrorKind::Framework { name: OpenCL::FRAMEWORK_NAME }, e)
     }
 }

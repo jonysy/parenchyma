@@ -1,6 +1,5 @@
-use super::super::{Framework, DeviceKind};
-use super::super::error::{Error, Result};
-use super::{NativeContext, NativeDevice, NativeMemory};
+use super::NativeDevice;
+use super::super::super::DeviceKind;
 
 /// The `Native` framework simply represents the host CPU.
 ///
@@ -17,28 +16,24 @@ pub struct Native {
     pub available_devices: Vec<NativeDevice>,
 }
 
-impl Framework for Native {
-    const FRAMEWORK_NAME: &'static str = "NATIVE";
+impl Native {
 
-    type Context = NativeContext;
+    // const FRAMEWORK_NAME: &'static str = "NATIVE";
 
-    type Device = NativeDevice;
-
-    type E = Error;
-
-    type M = NativeMemory;
-
-    fn new() -> Result<Self> {
-        Ok(Native { 
+    pub fn new() -> Self {
+        Native { 
             available_devices: vec![NativeDevice {
                 name: "Host CPU",
                 compute_units: 1,
                 kind: DeviceKind::Cpu,
             }]
-        })
-    }
-
-    fn default_selection(&self) -> Vec<NativeDevice> {
-        self.available_devices.clone()
+        }
     }
 }
+
+// impl Framework for Native {
+    
+//     const FRAMEWORK_NAME: &'static str = "NATIVE";
+
+//     type Err = !;
+// }

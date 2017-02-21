@@ -9,12 +9,9 @@ documentation = "https://docs.rs/parenchyma"
 repository = "https://github.com/lychee-eng/parenchyma"
 license = "MIT/Apache-2.0"
 
+[dependencies]
+enum_primitive = "0.1.1"
+log = "0.3.6"
+
 [features]
 unstable_alloc = [] # faster but unstable memory allocation on native machines
-
-[workspace]
-members = [
-    "./frameworks/cuda",
-    "./frameworks/opencl",
-    "./frameworks/native"
-]

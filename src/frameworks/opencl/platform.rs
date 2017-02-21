@@ -1,5 +1,5 @@
-use api;
 use super::{OpenCLDevice, Result};
+use super::api;
 
 /// A platform specifies the OpenCL implementation.
 ///

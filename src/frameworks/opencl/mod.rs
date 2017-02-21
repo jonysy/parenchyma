@@ -25,12 +25,6 @@
 //! - Transfer results back
 //! - Free memory on devices
 
-#![feature(associated_consts, libc, pub_restricted, type_ascription)]
-
-#[macro_use] extern crate enum_primitive;
-extern crate libc;
-extern crate parenchyma;
-
 pub use self::context::OpenCLContext;
 pub use self::device::OpenCLDevice;
 pub use self::event::OpenCLEvent;

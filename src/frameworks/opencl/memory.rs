@@ -1,4 +1,4 @@
-use api;
+use super::api;
 
 /// Holds a OpenCL memory id and manages its deallocation
 #[derive(Debug)]
