@@ -1,4 +1,4 @@
-use super::{OpenCLDevice, OpenCLQueue, Result};
+use super::{OpenCLDevice, OpenCLKernels, OpenCLQueue, Result};
 use super::api;
 
 // notes:
@@ -20,6 +20,8 @@ use super::api;
 #[derive(Clone, Debug)]
 pub struct OpenCLContext {
     ptr: api::Context,
+    program: api::Program,
+    kernels: OpenCLKernels,
     selected_devices: Vec<OpenCLDevice>,
 }
 
@@ -42,7 +44,13 @@ impl OpenCLContext {
             device.prepare(raw_context.clone(), queue);
         }
 
-        Ok(OpenCLContext { ptr: raw_context, selected_devices: devices })
+        let source = vec![include_str!("source/math.cl")];
+
+        let program = raw_context.create_program_with_source(&source)?;
+        program.build(&raw_devices)?;
+        let kernels = OpenCLKernels::new(&program)?;
+
+        Ok(OpenCLContext { ptr: raw_context, program, kernels, selected_devices: devices })
     }
 
     pub fn devices(&self) -> &[OpenCLDevice] {

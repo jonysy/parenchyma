@@ -97,7 +97,7 @@
 //         /* trivial_casts, */ trivial_numeric_casts,
 //         unused_import_braces, unused_qualifications)]
 
-#![feature(associated_consts, libc, pub_restricted, type_ascription, untagged_unions)]
+#![feature(associated_consts, field_init_shorthand, libc, pub_restricted, type_ascription, untagged_unions)]
 
 #[macro_use] extern crate enum_primitive;
 #[macro_use] extern crate log;

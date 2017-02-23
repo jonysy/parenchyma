@@ -11,15 +11,19 @@ pub mod sys;
 pub use self::context::Context;
 pub use self::device::Device;
 pub use self::event::Event;
+pub use self::kernel::Kernel;
 pub use self::memory::Memory;
 pub use self::platform::Platform;
+pub use self::program::Program;
 pub use self::queue::Queue;
 
 mod context;
 mod device;
 mod event;
+mod kernel;
 mod memory;
 mod platform;
+mod program;
 mod queue;
 
 /// Number of platforms
