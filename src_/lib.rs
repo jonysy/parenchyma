@@ -108,6 +108,18 @@
 extern crate alloc;
 extern crate libc;
 
-pub use self::frameworks::opencl;
+pub use self::backend::Backend;
+pub use self::context::ContextView;
+pub use self::device::{DeviceKind, DeviceView};
+pub use self::error::{Error, ErrorKind, Result};
+pub use self::frameworks::{native, opencl};
+pub use self::memory::MemoryView;
+pub use self::tensor::Tensor;
 
+mod backend;
+mod context;
+mod device;
+mod error;
 mod frameworks;
+mod memory;
+mod tensor;

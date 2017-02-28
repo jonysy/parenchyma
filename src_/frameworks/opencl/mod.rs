@@ -25,8 +25,25 @@
 //! - Transfer results back
 //! - Free memory on devices
 
-pub mod cl;
-pub mod error;
-pub mod hl;
+pub mod ops;
 
-mod utility;
+pub use self::context::OpenCLContext;
+pub use self::device::OpenCLDevice;
+pub use self::event::OpenCLEvent;
+pub use self::framework::OpenCL;
+pub use self::kernel::OpenCLKernels;
+pub use self::memory::OpenCLMemory;
+pub use self::platform::OpenCLPlatform;
+pub use self::result::Result;
+pub use self::queue::OpenCLQueue;
+
+mod api;
+mod context;
+mod device;
+mod event;
+mod framework;
+mod kernel;
+mod memory;
+mod platform;
+mod result;
+mod queue;
