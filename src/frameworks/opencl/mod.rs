@@ -25,6 +25,8 @@
 //! - Transfer results back
 //! - Free memory on devices
 
+pub mod ops;
+
 pub use self::context::OpenCLContext;
 pub use self::device::OpenCLDevice;
 pub use self::event::OpenCLEvent;
@@ -42,7 +44,6 @@ mod event;
 mod framework;
 mod kernel;
 mod memory;
-mod ops;
 mod platform;
 mod result;
 mod queue;

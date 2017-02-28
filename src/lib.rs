@@ -90,6 +90,8 @@
 //! [Collenchyma]: https://github.com/autumnai/collenchyma
 //! [Autumn]: https://github.com/autumnai
 
+#![allow(warnings)]
+
 #![cfg_attr(feature = "unstable_alloc", feature(alloc))]
 
 // #![deny(missing_docs,
@@ -112,13 +114,12 @@ pub use self::device::{DeviceKind, DeviceView};
 pub use self::error::{Error, ErrorKind, Result};
 pub use self::frameworks::{native, opencl};
 pub use self::memory::MemoryView;
-// pub use self::shared::SharedTensor;
+pub use self::tensor::Tensor;
 
 mod backend;
 mod context;
 mod device;
 mod error;
-// mod framework;
 mod frameworks;
 mod memory;
-// mod shared;
+mod tensor;

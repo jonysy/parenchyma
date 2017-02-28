@@ -21,8 +21,8 @@ use super::api;
 pub struct OpenCLContext {
     ptr: api::Context,
     program: api::Program,
-    kernels: OpenCLKernels,
-    selected_devices: Vec<OpenCLDevice>,
+    pub kernels: OpenCLKernels,
+    pub selected_devices: Vec<OpenCLDevice>,
 }
 
 impl OpenCLContext {

@@ -4,7 +4,6 @@
 #[macro_use]
 mod macros;
 
-pub mod enqueue;
 pub mod error;
 pub mod sys;
 

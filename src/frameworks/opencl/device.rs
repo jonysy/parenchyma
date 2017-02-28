@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use super::{OpenCLMemory, OpenCLQueue, Result};
-use super::api::{self, enqueue};
+use super::api;
 use super::super::super::{DeviceKind, DeviceView, MemoryView};
 
 #[derive(Clone, Debug)]
@@ -16,7 +16,7 @@ pub struct OpenCLDevice {
     pub kind: DeviceKind,
 
     context: Option<api::Context>,
-    queue: Option<OpenCLQueue>,
+    pub queue: Option<OpenCLQueue>,
 }
 
 impl OpenCLDevice {
@@ -71,8 +71,8 @@ impl OpenCLDevice {
             MemoryView::Native(ref src_native_memory) => {
                 let s_size = src_native_memory.len();
                 let s_ptr = src_native_memory.as_slice().as_ptr();
-                let p = self.queue.as_ref().unwrap().ptr();
-                let _ = enqueue::write_buffer(p, &destn.obj, true, 0, s_size, s_ptr, &[])?;
+
+                self.queue.as_ref().unwrap().ptr().write_buffer(&destn.obj, true, 0, s_size, s_ptr, &[])?;
 
                 Ok(())
             },
@@ -84,11 +84,11 @@ impl OpenCLDevice {
     /// Synchronizes `memory` to `destination`.
     pub fn synch_out(&self, src: &OpenCLMemory, _: &DeviceView, destn: &mut MemoryView) -> Result {
         match *destn {
-            MemoryView::Native(ref src_opencl_memory) => {
-                let d_size = src_opencl_memory.len();
-                let d_ptr = src_opencl_memory.as_mut_slice().as_mut_ptr();
-                let p = self.queue.as_ref().unwrap().ptr();
-                let _ = enqueue::read_buffer(p, &src.obj, true, 0, d_size, d_ptr, &[])?;
+            MemoryView::Native(ref d_opencl_memory) => {
+                let d_size = d_opencl_memory.len();
+                let d_ptr = d_opencl_memory.as_mut_slice().as_mut_ptr();
+
+                self.queue.as_ref().unwrap().ptr().read_buffer(&src.obj, true, 0, d_size, d_ptr, &[])?;
 
                 Ok(())
             },

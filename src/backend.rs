@@ -1,4 +1,4 @@
-use super::ContextView;
+use super::{ContextView, DeviceView};
 
 /// The heart of Parenchyma - provides an interface for running parallel computations on one or 
 /// more devices.
@@ -46,6 +46,22 @@ use super::ContextView;
 #[derive(Debug)]
 pub struct Backend { context: ContextView }
 
+impl Backend {
+
+    pub fn devices(&self) -> Vec<DeviceView> {
+        match self.context {
+            ContextView::OpenCL(ref c) => 
+                c.devices().iter().map(|d| DeviceView::OpenCL(d.clone())).collect(),
+            ContextView::Native(ref c) => 
+                c.devices().iter().map(|d| DeviceView::Native(d.clone())).collect(),
+        }
+    }
+
+    pub fn context(&self) -> &ContextView {
+        &self.context
+    }
+}
+
 impl Default for Backend {
     /// Construct a `Backend` from a [`framework`](./trait.Framework.html), such as OpenCL, CUDA, etc.,
     /// and a `selection` of devices.
@@ -57,7 +73,11 @@ impl Default for Backend {
         );
 
         match try_opencl_context {
-            Ok(opencl_context) => Backend { context: ContextView::OpenCL(opencl_context) },
+            Ok(opencl_context) => Backend {
+                context: ContextView::OpenCL(
+                    opencl_context
+                ), 
+            },
 
             Err(opencl_error) => {
                 use super::native::{Native, NativeContext};

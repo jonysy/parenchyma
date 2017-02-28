@@ -1,6 +1,7 @@
 use super::native::NativeMemory;
 use super::opencl::OpenCLMemory;
 
+#[derive(Debug)]
 pub enum MemoryView {
     Native(NativeMemory),
     OpenCL(OpenCLMemory),

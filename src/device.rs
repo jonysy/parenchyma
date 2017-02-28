@@ -3,6 +3,7 @@ use super::{Error, ErrorKind, MemoryView, Result};
 use super::native::NativeDevice;
 use super::opencl::OpenCLDevice;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DeviceView {
     Native(NativeDevice),
     OpenCL(OpenCLDevice),
@@ -22,6 +23,34 @@ pub enum DeviceKind {
 }
 
 impl DeviceView {
+
+    pub fn as_native(&self) -> Option<&NativeDevice> {
+        match *self {
+            DeviceView::Native(ref native) => Some(native),
+            _ => None,
+        }
+    }
+    
+    pub fn as_mut_native(&mut self) -> Option<&mut NativeDevice> {
+        match *self {
+            DeviceView::Native(ref mut native) => Some(native),
+            _ => None,
+        }
+    }
+
+    pub fn as_opencl(&self) -> Option<&OpenCLDevice> {
+        match *self {
+            DeviceView::OpenCL(ref opencl) => Some(opencl),
+            _ => None,
+        }
+    }
+
+    pub fn as_mut_opencl(&mut self) -> Option<&mut OpenCLDevice> {
+        match *self {
+            DeviceView::OpenCL(ref mut opencl) => Some(opencl),
+            _ => None,
+        }
+    }
 
     /// Allocates memory on a device.
     pub fn allocate_memory(&self, size: usize) -> Result<MemoryView> {

@@ -3,7 +3,7 @@ use super::api;
 
 #[derive(Clone, Debug)]
 pub struct OpenCLKernels {
-    sigmoid: api::Kernel,
+    pub sigmoid: api::Kernel,
 }
 
 impl OpenCLKernels {
