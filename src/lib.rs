@@ -108,6 +108,18 @@
 extern crate alloc;
 extern crate libc;
 
+pub use self::backend::Backend;
+pub use self::buffer::Buffer;
+pub use self::device::Device;
+pub use self::error::{Error, ErrorKind, Result};
 pub use self::frameworks::opencl;
+pub use self::processor::Processor;
+pub use self::tensor::{Shape, SharedTensor, Tensor};
 
+mod backend;
+mod buffer;
+mod device;
+mod error;
 mod frameworks;
+mod processor;
+mod tensor;

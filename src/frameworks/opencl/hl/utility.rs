@@ -1,5 +1,5 @@
-use super::cl;
 use super::error::{ErrorKind, Result};
+use super::super::cl;
 
 pub fn check<F, T>(cl_status: cl::CLStatus, ok_value: F) -> Result<T> where F: FnOnce() -> T {
 

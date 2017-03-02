@@ -1,5 +1,5 @@
-use super::cl::CLStatus;
 use std::{error, fmt, result};
+use super::super::cl::CLStatus;
 
 pub type Result<T = ()> = result::Result<T, Error>;
 
@@ -70,7 +70,7 @@ impl From<CLStatus> for ErrorKind {
 
     fn from(cl_status: CLStatus) -> ErrorKind {
         use self::ErrorKind::*;
-        use super::cl::CLStatus::*;
+        use super::super::cl::CLStatus::*;
 
         match cl_status {
             CL_SUCCESS => unreachable!(),

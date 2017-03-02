@@ -1,43 +1,35 @@
+pub use self::error::{Error, ErrorKind, Result};
+
+mod error;
+mod utility;
+
 use std::os::raw;
 use std::{clone, cmp, ffi, mem, ops, ptr};
-use super::{cl, utility};
-use super::error::Result;
+use super::cl;
+
+/// Number of platforms
+pub fn nplatforms() -> Result<u32> {
+    unsafe {
+        let mut nplatforms = 0;
+        let ret_value = cl::clGetPlatformIDs(0, ptr::null_mut(), &mut nplatforms);
+        return utility::check(ret_value, || nplatforms);
+    }
+}
+
+/// Obtain the list of platforms available.
+pub fn platforms() -> Result<Vec<Platform>> {
+    unsafe {
+        let nplatforms = nplatforms()?;
+        let mut vec_id = vec![0 as cl::cl_platform_id; nplatforms as usize];
+        let ret_value = cl::clGetPlatformIDs(nplatforms, vec_id.as_mut_ptr(), ptr::null_mut());
+        return utility::check(ret_value, || vec_id.iter().map(|&id| Platform(id)).collect());
+    }
+}
 
 #[derive(Debug)]
 pub struct Buffer(cl::cl_mem);
 
 impl Buffer {
-    /// Creates a buffer object with a size of `size`.
-    ///
-    /// # Arguments
-    ///
-    /// * `flag` - A bit-field that is used to specify allocation and usage information such as the 
-    /// memory arena that should be used to allocate the buffer object and how it will be used.
-    /// https://streamcomputing.eu/blog/2013-02-03
-    ///
-    /// * `size` - The size in bytes of the buffer memory object to be allocated.
-    ///
-    /// * `host_pointer` - A pointer to the buffer data that may already be allocated by the 
-    /// application. The size of the buffer that host_ptr points to must be greater than or equal 
-    /// to the size bytes.
-    pub fn new<F, H>(context: &Context, f: F, size: usize, h: H) -> Result<Buffer> 
-        where F: Into<Option<cl::cl_bitfield>>,
-              H: Into<Option<*mut raw::c_void>>,
-    {
-        unsafe {
-            let mut errcode_ret: i32 = 0;
-            let flags = f.into().unwrap_or(cl::CL_MEM_READ_WRITE);
-            let host_pointer = h.into().unwrap_or(ptr::null_mut());
-
-            let mem = cl::clCreateBuffer(context.0, flags, size, host_pointer, &mut errcode_ret);
-
-            let ret_value = cl::CLStatus::new(errcode_ret)
-                .expect("failed to convert `i32` to `CLStatus`");
-
-            return utility::check(ret_value, || Buffer(mem));
-        }
-    }
-
     /// Increments the memory object reference count.
     pub fn retain(&self) -> Result {
         unsafe {
@@ -142,6 +134,37 @@ impl Context {
                 .expect("failed to convert `i32` to `CLStatus`");
 
             return utility::check(ret_value, || Context(cl_context));
+        }
+    }
+
+    /// Creates a buffer object with a size of `size`.
+    ///
+    /// # Arguments
+    ///
+    /// * `flag` - A bit-field that is used to specify allocation and usage information such as the 
+    /// memory arena that should be used to allocate the buffer object and how it will be used.
+    /// https://streamcomputing.eu/blog/2013-02-03
+    ///
+    /// * `size` - The size in bytes of the buffer memory object to be allocated.
+    ///
+    /// * `host_pointer` - A pointer to the buffer data that may already be allocated by the 
+    /// application. The size of the buffer that host_ptr points to must be greater than or equal 
+    /// to the size bytes.
+    pub fn create_buffer<F, H>(&self, f: F, size: usize, h: H) -> Result<Buffer> 
+        where F: Into<Option<cl::cl_bitfield>>,
+              H: Into<Option<*mut raw::c_void>>,
+    {
+        unsafe {
+            let mut errcode_ret: i32 = 0;
+            let flags = f.into().unwrap_or(cl::CL_MEM_READ_WRITE);
+            let host_pointer = h.into().unwrap_or(ptr::null_mut());
+
+            let mem = cl::clCreateBuffer(self.0, flags, size, host_pointer, &mut errcode_ret);
+
+            let ret_value = cl::CLStatus::new(errcode_ret)
+                .expect("failed to convert `i32` to `CLStatus`");
+
+            return utility::check(ret_value, || Buffer(mem));
         }
     }
 
@@ -897,7 +920,7 @@ impl Platform {
         }
     }
 
-    pub fn all_device_ids(&self) -> Result<Vec<Device>> {
+    pub fn devices(&self) -> Result<Vec<Device>> {
         self.devices_by_type(cl::CL_DEVICE_TYPE_ALL)
     }
 
@@ -1070,7 +1093,7 @@ impl Queue {
     /// or queue a wait for this particular command to complete. event can be NULL in which case it 
     /// will not be possible for the application to query the status of this command or queue a wait 
     /// for this command to complete. 
-    pub fn write_buffer(
+    pub fn enqueue_write_buffer(
         &self, 
         buffer:          &Buffer, 
         blocking_write:  bool, 
@@ -1131,7 +1154,7 @@ impl Queue {
     ///
     /// * `event_wait_list` - specify events that need to complete before this particular command 
     /// can be executed.
-    pub fn read_buffer(
+    pub fn enqueue_read_buffer(
         &self,
         buffer:          &Buffer,
         blocking_read:   bool,
