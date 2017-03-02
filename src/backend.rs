@@ -1,4 +1,5 @@
-use super::Device;
+use super::{Device, Result};
+use super::opencl;
 
 /// The heart of Parenchyma - provides an interface for running parallel computations on one or 
 /// more devices.
@@ -45,14 +46,26 @@ use super::Device;
 /// ```
 #[derive(Debug)]
 pub struct Backend {
+    context: opencl::OpenClContext,
     selected_device: usize,
 }
 
 impl Backend {
 
-    pub fn device<T>(&self) -> &Device<T> {
+    pub fn new() -> Result<Backend> {
+        let framework = opencl::OpenCl::try_new()?;
+        let context = opencl::OpenClContext::try_from(framework.available_devices)?;
 
-        unimplemented!()
+        Ok(Backend { context, selected_device: 0 })
+    }
+
+    pub fn context(&self) -> &opencl::OpenClContext {
+        &self.context
+    }
+
+    pub fn device(&self) -> &opencl::OpenClDevice {
+
+        &self.context.selection()[self.selected_device]
     }
 
     pub fn selected_device(&self) -> usize {

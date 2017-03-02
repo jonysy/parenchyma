@@ -10,5 +10,5 @@ pub trait Device<T> {
     fn synch_in(&self, buffer: &mut Buffer, source: &[T]) -> Result;
 
     /// Synchronizes `memory` to host.
-    fn synch_out(&self, buffer: &Buffer, destination: &mut [T]) -> Result;
+    fn synch_out(&self, buffer: &Buffer, destination: &mut [T], size: usize) -> Result;
 }

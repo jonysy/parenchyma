@@ -1,6 +1,6 @@
 use std::{convert, mem};
 use std::marker::PhantomData;
-use super::{Backend, Buffer, Result};
+use super::{Backend, Buffer, Device, Result};
 
 /// A shared tensor for framework-agnostic, memory-aware, n-dimensional storage.
 ///
@@ -37,10 +37,17 @@ pub struct SharedTensor<T> {
     phantom: PhantomData<T>,
 }
 
+impl<T> ::opencl::hl::KernelArg for SharedTensor<T> {
+    fn size() -> usize { mem::size_of::<::opencl::cl::cl_mem>() }
+    fn pointer(&self) -> ::opencl::cl::cl_mem { unsafe { 
+        mem::transmute(self.latest_copy.as_opencl()) 
+    } }
+}
+
 // /// Synchronization direction.
 // pub enum Synch { In, Out, Bidirectional }
 
-impl<T> SharedTensor<T> {
+impl<T> SharedTensor<T> where T: Clone {
 
     /// Constructs a new `SharedTensor`.
     ///
@@ -64,15 +71,20 @@ impl<T> SharedTensor<T> {
         mem::size_of::<T>() * shape.capacity
     }
 
-    // pub fn view(&self, device: &Device) -> Tensor<T> {
-    //     unsafe {
-    //         let mut buffer: Vec<T> = Vec::with_capacity(self.shape.capacity);
-    //         buffer.set_len(self..shape.capacity);
-    //         device.synch_out(&mut buffer)?;
+    pub fn dims(&self) -> &Vec<usize> {
+        &self.shape.dims
+    }
 
-    //         Tensor { buffer, shape: self.shape }
-    //     }
-    // }
+    pub fn view(&mut self, backend: &Backend) -> Result<Tensor<T>> {
+        unsafe {
+            let mut buffer: Vec<T> = Vec::with_capacity(self.shape.capacity);
+            buffer.set_len(self.shape.capacity);
+            let size = Self::alloc_size(&self.shape);
+            backend.device().synch_out(&mut self.latest_copy, &mut buffer, size)?;
+
+            Ok(Tensor { buffer, shape: self.shape.to_owned() })
+        }
+    }
 }
 
 /// A tensor.
@@ -84,8 +96,15 @@ pub struct Tensor<T> {
     shape: Shape,
 }
 
+impl<T> Tensor<T> {
+
+    pub fn buffer(&self) -> &[T] {
+        &self.buffer
+    }
+}
+
 /// Describes the shape of a tensor.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Shape {
     /// The number of components.
     ///
@@ -108,22 +127,22 @@ pub struct Shape {
     /// ```
     rank: usize,
     /// The dimensions of the tensor.
-    dims: Vec<usize>,
+    pub dims: Vec<usize>,
     /// The strides for the allocated tensor.
     stride: Vec<usize>,
 }
 
-impl convert::From<[usize; 0]> for Shape {
+// impl convert::From<[usize; 0]> for Shape {
 
-    fn from(array: [usize; 0]) -> Shape {
-        let capacity = 1;
-        let rank = 0;
-        let dims = Vec::with_capacity(1) /* TODO `with_capacity`? */;
-        let stride = vec![];
+//     fn from(array: [usize; 0]) -> Shape {
+//         let capacity = 1;
+//         let rank = 0;
+//         let dims = Vec::with_capacity(1) /* TODO `with_capacity`? */;
+//         let stride = vec![];
 
-        Shape { capacity, rank, dims, stride }
-    }
-}
+//         Shape { capacity, rank, dims, stride }
+//     }
+// }
 
 impl convert::From<[usize; 1]> for Shape {
 

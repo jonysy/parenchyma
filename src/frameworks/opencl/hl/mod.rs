@@ -786,7 +786,7 @@ pub trait KernelArg {
 
 impl KernelArg for Buffer {
     fn size() -> usize { mem::size_of::<cl::cl_mem>() }
-    fn pointer(&self) -> *mut raw::c_void { self.0 }
+    fn pointer(&self) -> cl::cl_mem { self.0 }
 }
 
 impl Kernel {
@@ -822,9 +822,11 @@ impl Kernel {
     /// argument is of type sampler_t, the arg_value entry must be a pointer to the sampler 
     /// object. For all other kernel arguments, the arg_value entry must be a pointer to the actual 
     /// data to be used as argument value.
-    pub fn set_arg<A>(&self, position: u32, size: usize, buf: &A) -> Result where A: KernelArg {
+    pub fn set_arg<A>(&self, position: u32, buf: &A) -> Result where A: KernelArg {
         unsafe {
-            let ret_value = cl::clSetKernelArg(self.0, position, A::size(), buf.pointer());
+            let size = A::size();
+            let ptr = buf.pointer();
+            let ret_value = cl::clSetKernelArg(self.0, position, size, ptr);
             return utility::check(ret_value, || {});
         }
     }
@@ -993,7 +995,7 @@ impl Program {
         }
     }
 
-    /// Creates a kernal object.
+    /// Creates a kernel object.
     pub fn create_kernel<T>(&self, name: T) -> Result<Kernel> where T: AsRef<str> {
         unsafe {
             let mut errcode = 0i32;
@@ -1106,8 +1108,8 @@ impl Queue {
         unsafe {
 
             let num_events_in_wait_list = event_wait_list.len() as u32;
-
-            let list = event_wait_list.as_ptr();
+            let events = 
+                if num_events_in_wait_list > 0 { event_wait_list.as_ptr() } else { ptr::null() };
 
             let mut new_event = 0 as cl::cl_event;
 
@@ -1121,7 +1123,7 @@ impl Queue {
                 cb,
                 ptr,
                 num_events_in_wait_list,
-                list,
+                events,
                 &mut new_event
             );
 
@@ -1166,7 +1168,8 @@ impl Queue {
 
         unsafe {
             let num_events_in_wait_list = event_wait_list.len() as u32;
-            let event_wait_list_ptr = event_wait_list.as_ptr();
+            let events = 
+                if num_events_in_wait_list > 0 { event_wait_list.as_ptr() } else { ptr::null() };
 
             let mut new_event = 0 as cl::cl_event;
 
@@ -1180,7 +1183,7 @@ impl Queue {
                 cb,
                 ptr,
                 num_events_in_wait_list,
-                event_wait_list_ptr,
+                events,
                 &mut new_event
             );
 
@@ -1252,18 +1255,27 @@ impl Queue {
             let global_work_offset = ptr::null();
 
             let num_events_in_wait_list = event_wait_list.len() as u32;
+            let events = 
+                if num_events_in_wait_list > 0 { event_wait_list.as_ptr() } else { ptr::null() };
 
             let mut new_event = 0 as cl::cl_event;
+
+            // == ptrs
+            let global_work_size_ptr = 
+                if global_work_size.len() > 0 { global_work_size.as_ptr() } else { ptr::null() };
+
+            let local_work_size_ptr =
+                if local_work_size.len() > 0 { local_work_size.as_ptr() } else { ptr::null() };
 
             let ret_value = cl::clEnqueueNDRangeKernel(
                 self.0,
                 kernel.0,
                 work_dim,
                 global_work_offset,
-                global_work_size.as_ptr(),
-                local_work_size.as_ptr(),
+                global_work_size_ptr,
+                local_work_size_ptr,
                 num_events_in_wait_list,
-                event_wait_list.as_ptr(),
+                events,
                 &mut new_event
             );
 

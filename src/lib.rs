@@ -108,6 +108,8 @@
 extern crate alloc;
 extern crate libc;
 
+pub mod ops;
+
 pub use self::backend::Backend;
 pub use self::buffer::Buffer;
 pub use self::device::Device;
