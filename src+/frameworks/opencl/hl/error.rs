@@ -1,12 +1,12 @@
-use frameworks::opencl::sh::CLStatus;
 use std::{error, fmt, result};
+use super::super::cl::CLStatus;
 
 pub type Result<T = ()> = result::Result<T, Error>;
 
 #[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
-    inner: Option<Box<error::Error + Send + Sync>>,
+    error: Option<Box<error::Error + Send + Sync>>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -69,8 +69,8 @@ pub enum ErrorKind {
 impl From<CLStatus> for ErrorKind {
 
     fn from(cl_status: CLStatus) -> ErrorKind {
-        use frameworks::opencl::sh::CLStatus::*;
         use self::ErrorKind::*;
+        use super::super::cl::CLStatus::*;
 
         match cl_status {
             CL_SUCCESS => unreachable!(),
@@ -146,27 +146,27 @@ impl From<ErrorKind> for Error {
 impl Error {
 
     /// Creates a new error from a known kind of error as well as an arbitrary error.
-    pub fn new<K, E>(kind: K, inner: E) -> Error 
+    pub fn new<K, E>(kind: K, error: E) -> Error 
         where K: Into<ErrorKind>, 
               E: Into<Box<error::Error + Send + Sync>>
     {
 
-        Self::_new(kind.into(), Some(inner.into()))
+        Self::_new(kind.into(), Some(error.into()))
     }
 
     // "De-generization" technique..
-    fn _new(kind: ErrorKind, inner: Option<Box<error::Error + Send + Sync>>) -> Error {
+    fn _new(kind: ErrorKind, error: Option<Box<error::Error + Send + Sync>>) -> Error {
 
         Error {
             kind: kind,
-            inner: inner
+            error: error
         }
     }
 
     pub fn get_ref(&self) -> Option<&(error::Error + Send + Sync + 'static)> {
         use std::ops::Deref;
 
-        match self.inner {
+        match self.error {
             Some(ref error) => Some(error.deref()),
             _ => None
         }
@@ -190,7 +190,7 @@ impl error::Error for Error {
 
     fn description(&self) -> &str {
 
-        if let Some(ref error) = self.inner {
+        if let Some(ref error) = self.error {
             error.description()
         } else {
             self.kind.as_str()
@@ -199,7 +199,7 @@ impl error::Error for Error {
 
     fn cause(&self) -> Option<&error::Error> {
 
-        match self.inner {
+        match self.error {
             Some(ref error) => {
                 error.cause()
             },

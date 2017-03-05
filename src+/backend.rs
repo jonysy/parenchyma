@@ -1,4 +1,5 @@
-use super::{Context, Framework};
+use super::{Device, Result};
+use super::opencl;
 
 /// The heart of Parenchyma - provides an interface for running parallel computations on one or 
 /// more devices.
@@ -45,15 +46,36 @@ use super::{Context, Framework};
 /// ```
 #[derive(Debug)]
 pub struct Backend {
-    /// The initialized framework.
-    pub framework: Box<Framework>,
-    /// The context associated with the `framework`.
-    ///
-    /// Contexts are the heart of both OpenCL and CUDA applications. See the [`Context`] trait for
-    /// more information.
-    ///
-    /// [`Context`]: (./trait.Context.html)
-    pub context: Box<Context>,
-    /// The chosen device
-    device: usize,
+    context: opencl::OpenClContext,
+    selected_device: usize,
+}
+
+impl Backend {
+
+    pub fn new() -> Backend {
+        // let framework = opencl::OpenCl::try_new()?;
+        // let context = opencl::OpenClContext::try_from(framework.available_devices)?;
+
+        // Ok(Backend { context, selected_device: 0 })
+
+        unimplemented!()
+    }
+
+    pub fn try_from<F>(framework: F) -> Result<Backend> {
+
+        unimplemented!()
+    }
+
+    pub fn context(&self) -> &opencl::OpenClContext {
+        &self.context
+    }
+
+    pub fn device(&self) -> &opencl::OpenClDevice {
+
+        &self.context.selection()[self.selected_device]
+    }
+
+    pub fn selected_device(&self) -> usize {
+        self.selected_device
+    }
 }

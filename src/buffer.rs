@@ -1,16 +1,17 @@
-use super::opencl;
-
-#[derive(Clone, Debug)]
+/// Represents a buffer object.
+///
+/// note: downcast methods are included
 pub enum Buffer {
-    /// A "newtype" around an OpenCL memory id that manages its deallocation.
-    OpenCl(opencl::hl::Buffer),
+    // /// A CUDA memory object.
+    // Cuda(..),
+    // /// Native memory
+    // Native(..),
+    // /// An OpenCL buffer.
+    // OpenCl(..),
 }
 
-impl Buffer {
+// impl Buffer {
 
-    pub fn as_opencl(&self) -> &opencl::hl::Buffer {
-        match *self {
-            Buffer::OpenCl(ref opencl) => opencl,
-        }
-    }
-}
+//     pub fn 
+//     pub fn size(&self) -> usize { .. }
+// }

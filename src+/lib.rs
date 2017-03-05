@@ -90,33 +90,38 @@
 //! [Collenchyma]: https://github.com/autumnai/collenchyma
 //! [Autumn]: https://github.com/autumnai
 
-// #![deny(missing_docs, unused_import_braces, unused_qualifications)]
-#![feature(associated_consts, field_init_shorthand, libc, type_ascription, untagged_unions)]
+#![allow(warnings)]
+
+#![cfg_attr(feature = "unstable_alloc", feature(alloc))]
+
+// #![deny(missing_docs,
+//         missing_debug_implementations, missing_copy_implementations,
+//         /* trivial_casts, */ trivial_numeric_casts,
+//         unused_import_braces, unused_qualifications)]
+
+#![feature(associated_consts, field_init_shorthand, libc, pub_restricted, type_ascription, untagged_unions)]
 
 #[macro_use] extern crate enum_primitive;
-#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
 
+#[cfg(feature = "unstable_alloc")]
+extern crate alloc;
 extern crate libc;
-extern crate libloading as lib;
-extern crate ndarray;
 
-pub mod changelog;
-pub mod error;
-pub mod frameworks;
+pub mod ops;
 
 pub use self::backend::Backend;
 pub use self::buffer::Buffer;
-pub use self::context::Context;
 pub use self::device::Device;
-pub use self::framework::Framework;
+pub use self::error::{Error, ErrorKind, Result};
+pub use self::frameworks::opencl;
 pub use self::processor::Processor;
-pub use self::tensor::{SharedTensor, Tensor};
+pub use self::tensor::{Shape, SharedTensor, Tensor};
 
 mod backend;
 mod buffer;
-mod context;
 mod device;
-mod framework;
+mod error;
+mod frameworks;
 mod processor;
 mod tensor;

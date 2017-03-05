@@ -1,5 +1,4 @@
-use super::Buffer;
-use super::error::Result;
+use super::{Buffer, Result};
 
 /// The `T` type associated with the [`SharedTensor`](./struct.SharedTensor.html).
 pub trait Device<T> {
@@ -8,8 +7,8 @@ pub trait Device<T> {
     fn allocate(&self, size: usize, host: Option<&mut [T]>) -> Result<Buffer>;
 
     /// Synchronizes `memory` from `source`.
-    fn sync_in(&self, memory: &mut Buffer, source: &[T]) -> Result;
+    fn synch_in(&self, buffer: &mut Buffer, source: &[T]) -> Result;
 
-    /// Synchronizes `memory` to `destination`.
-    fn sync_out(&self, memory: &Buffer, destination: &mut [T]) -> Result;
+    /// Synchronizes `memory` to host.
+    fn synch_out(&self, buffer: &Buffer, destination: &mut [T], size: usize) -> Result;
 }

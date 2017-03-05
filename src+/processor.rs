@@ -1,4 +1,6 @@
-/// General categories for devices, used to identify the type of a device.
+use std::borrow::Cow;
+
+/// Used to identify the type of a device.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Processor {
     /// Used for accelerators. Accelerators can communicate with host processor using a peripheral
@@ -10,5 +12,5 @@ pub enum Processor {
     /// Used for GPU devices.
     Graphics,
     /// Used for anything else.
-    Custom { name: String },
+    Custom(Cow<'static, str>),
 }

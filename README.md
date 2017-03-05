@@ -23,23 +23,6 @@ a few necessary additions/modifications.
 > available in the Parenchyma project, as the different approaches that are currently being 
 > considered may prove to be better than the original approach.
 
-```toml
-[dependencies]
-parenchyma = "0.0.2"
-```
-
-## Introduction
-
-Parenchyma is an extensible, pluggable, backend-agnostic framework for parallel, high-performance 
-computing with CUDA, OpenCL and common host CPU. It is fast, easy to build and allows you to execute 
-operations on almost any machine, even if it does not have CUDA or OpenCL compatible devices.
-
-Parenchyma abstracts over the different computing languages and APIs (Native, OpenCL, CUDA). 
-Thanks to easy parallelization, Parenchyma lets you run highly-performant code on servers, desktops 
-or mobile devices without the need to adapt your code for each machine. Parenchyma does 
-not require OpenCL or CUDA on the machine and automatically [falls back](/../../issues/15) to the 
-native host CPU, making your application highly flexible.
-
 ## License
 
 Dual licensed under
