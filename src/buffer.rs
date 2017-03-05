@@ -1,17 +1,67 @@
+use frameworks::opencl::OpenClBuffer;
+use super::Tensor;
+
 /// Represents a buffer object.
 ///
-/// note: downcast methods are included
-pub enum Buffer {
+/// note: downcast methods are provided.
+#[derive(Debug)]
+pub enum Buffer<T> {
     // /// A CUDA memory object.
     // Cuda(..),
-    // /// Native memory
-    // Native(..),
-    // /// An OpenCL buffer.
-    // OpenCl(..),
+
+    /// The native memory representation.
+    Native(Tensor<T>),
+
+    /// An OpenCL buffer.
+    OpenCl(OpenClBuffer),
 }
 
-// impl Buffer {
+impl<T> Buffer<T> {
+    /// Returns a reference to the native memory representation.
+    pub fn as_native(&self) -> Option<&Tensor<T>> {
+        match *self {
+            Buffer::Native(ref native) => Some(native),
+            _ => None
+        }
+    }
 
-//     pub fn 
-//     pub fn size(&self) -> usize { .. }
-// }
+    /// Returns a mutable reference to the native memory representation.
+    pub fn as_mut_native(&mut self) -> Option<&mut Tensor<T>> {
+        match *self {
+            Buffer::Native(ref mut native) => Some(native),
+            _ => None
+        }
+    }
+
+    /// Returns the native memory representation, consuming the convertee.
+    pub fn into_native(self) -> Option<Tensor<T>> {
+        match self {
+            Buffer::Native(native) => Some(native),
+            _ => None
+        }
+    }
+
+    /// Returns a reference to the OpenCL buffer.
+    pub fn as_opencl(&self) -> Option<&OpenClBuffer> {
+        match *self {
+            Buffer::OpenCl(ref opencl) => Some(opencl),
+            _ => None
+        }
+    }
+
+    /// Returns a mutable reference to the OpenCL buffer.
+    pub fn as_mut_opencl(&mut self) -> Option<&mut OpenClBuffer> {
+        match *self {
+            Buffer::OpenCl(ref mut opencl) => Some(opencl),
+            _ => None
+        }
+    }
+
+    /// Returns the OpenCL buffer, consuming the convertee.
+    pub fn into_opencl(self) -> Option<OpenClBuffer> {
+        match self {
+            Buffer::OpenCl(opencl) => Some(opencl),
+            _ => None
+        }
+    }
+}

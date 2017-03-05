@@ -1,4 +1,5 @@
-use super::{Context, Framework};
+use super::{Context, Device, Framework};
+use super::error::Result;
 
 /// The heart of Parenchyma - provides an interface for running parallel computations on one or 
 /// more devices.
@@ -56,4 +57,29 @@ pub struct Backend {
     pub context: Box<Context>,
     /// The chosen device
     device: usize,
+}
+
+impl Backend {
+
+    /// Constructs a backend using the most potent framework given the underlying hardware.
+    pub fn new() -> Backend {
+
+        unimplemented!()
+    }
+
+    /// Attempts to construct a backend from the specified `framework` and the index of 
+    /// the `selected` device.
+    pub fn with<F>(framework: F, selected: usize) -> Result<Backend> where F: Framework {
+
+        unimplemented!()
+    }
+}
+
+impl Backend {
+
+    /// Returns the current device.
+    pub fn device<T>(&self) -> &Device<T> {
+
+        unimplemented!()
+    }
 }

@@ -1,6 +1,12 @@
+use ndarray::{Array, IxDyn};
+use std::{convert, mem};
 use std::marker::PhantomData;
+
 use super::Backend;
 use super::error::Result;
+
+/// A native tensor.
+pub type Tensor<T> = Array<T, IxDyn>;
 
 /// A shared tensor for framework-agnostic, memory-aware, n-dimensional storage.
 ///
@@ -25,31 +31,88 @@ use super::error::Result;
 /// arrays, such as `[[1, 2, 3], [4, 5, 6]]`, represents a tensor with a rank of 2.
 #[derive(Debug)]
 pub struct SharedTensor<T> {
+    /// The shape of the shared tensor.
+    pub shape: Shape,
     /// A marker for `T`.
     phantom: PhantomData<T>,
 }
 
-// /// Synchronization direction.
-// pub enum Synch { In, Out, Bidirectional }
-
-impl<T> SharedTensor<T> /*where T: Scalar*/ {
+impl<T> SharedTensor<T> /*where T: Scalar | Float */ {
 
     /// Constructs a new `SharedTensor`.
-    pub fn new(backend: &Backend) -> Result<Self> {
+    pub fn new<I>(backend: &Backend, shape: I) -> Result<Self> where I: Into<Shape> {
 
         unimplemented!()
     }
 
-    /// Constructs a new `SharedTensor` with the data from the supplied `slice`.
-    pub fn new(backend: &Backend, slice: &mut [T]) -> Result<Self> {
+    /// Constructs a new `SharedTensor` from the supplied `chunk` of data.
+    pub fn with<I, A>(backend: &Backend, shape: I, chunk: A) -> Result<Self> 
+        where I: Into<Shape>, 
+              A: AsMut<[T]> {
 
-        unimplemented!()
+        let device = backend.device();
     }
 }
 
-/// A native tensor.
-#[derive(Debug)]
-pub struct Tensor<T> {
-    // /// The internal representation of the tensor.
-    // buffer: NativeBuffer,
+// impl<T> SharedTensor<T> {
+
+//     // /// Returns the internal representation of the tensor.
+//     // pub fn tensor(&self) -> Tensor<T> {
+
+//     //     unimplemented!()
+//     // }
+
+//     /// Returns the size of the allocated memory in bytes.
+//     pub fn allocated(&self, capacity: usize) -> usize {
+//         capacity * mem::size_of::<T>()
+//     }
+// }
+
+/// Describes the shape of a tensor.
+#[derive(Clone, Debug)]
+pub struct Shape {
+    /// The number of components.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // The following tensor has 9 components
+    ///
+    /// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    /// ```
+    capacity: usize,
+    /// The total number of indices.
+    ///
+    /// # Example
+    ///
+    /// The following tensor has a rank of 2:
+    ///
+    /// ```ignore
+    /// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    /// ```
+    rank: usize,
+    /// The dimensions of the tensor.
+    dims: Vec<usize>,
+}
+
+impl convert::From<[usize; 1]> for Shape {
+
+    fn from(array: [usize; 1]) -> Shape {
+        let capacity = array[0];
+        let rank = 1;
+        let dims = array.to_vec();
+
+        Shape { capacity, rank, dims }
+    }
+}
+
+impl convert::From<[usize; 2]> for Shape {
+
+    fn from(array: [usize; 2]) -> Shape {
+        let capacity = array.iter().fold(1, |acc, &dims| acc * dims);
+        let rank = 2;
+        let dims = array.to_vec();
+
+        Shape { capacity, rank, dims }
+    }
 }

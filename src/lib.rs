@@ -90,12 +90,15 @@
 //! [Collenchyma]: https://github.com/autumnai/collenchyma
 //! [Autumn]: https://github.com/autumnai
 
+#![cfg_attr(feature = "unstable_alloc", feature(alloc))]
 // #![deny(missing_docs, unused_import_braces, unused_qualifications)]
 #![feature(associated_consts, field_init_shorthand, libc, type_ascription, untagged_unions)]
 
 #[macro_use] extern crate enum_primitive;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
+
+#[cfg(feature = "unstable_alloc")] extern crate alloc;
 
 extern crate libc;
 extern crate libloading as lib;
@@ -111,7 +114,7 @@ pub use self::context::Context;
 pub use self::device::Device;
 pub use self::framework::Framework;
 pub use self::processor::Processor;
-pub use self::tensor::{SharedTensor, Tensor};
+pub use self::tensor::{Shape, SharedTensor, Tensor};
 
 mod backend;
 mod buffer;

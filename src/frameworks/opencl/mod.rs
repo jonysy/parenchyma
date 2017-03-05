@@ -54,6 +54,13 @@ pub struct OpenCL {
     // pub available_devices: Vec<OpenClDevice>,
 }
 
+/// A type wrapping around an OpenCL buffer id that manages its deallocation.
+#[derive(Clone, Debug)]
+pub struct OpenClBuffer {
+    hl: hl::Buffer,
+    capacity: usize,
+}
+
 // impl OpenCL {
 
 //     /// Attempts to initialize the framework.
