@@ -2,7 +2,8 @@ use std::{convert, mem};
 use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
 
-use super::{Backend, Buffer};
+use super::{Address, Backend, Memory};
+use super::utility;
 use super::error::{ErrorKind, Result};
 
 /// A shared tensor for framework-agnostic, memory-aware, n-dimensional storage. 
@@ -27,12 +28,39 @@ use super::error::{ErrorKind, Result};
 ///
 /// This is important, as it provides a unified data interface for executing tensor operations 
 /// on CUDA, OpenCL and common host CPU.
+///
+/// ## Read/Write
+///
+/// The methods `view`, `view_mut`, and `write` use `unsafe` to extend the lifetime of the returned 
+/// reference to the internally owned memory chunk. The borrowck guarantees that the shared tensor 
+/// outlives all of its tensors, and that there is only one mutable borrow. 
+///
+/// ### TODO:
+///
+/// * Therefore, we only need to make sure the memory locations won't be dropped or moved while 
+/// there are active tensors.
+///
+/// * Contexts and devices should also remain in scope, although it's unlikely that a context will
+/// have the same ID as a previous context...
+///
+/// ### Summary
+///
+/// If the caller reads (`view` or `view_mut`), memory is synchronized and the latest memory 
+/// object is returned. If the caller mutably borrows memory (`view_mut` and `write`), it's expected 
+/// that the memory will be overwritten, so the other memory locations are immediately considered 
+/// outdated.
+///
+/// ## Examples
+///
+/// ```{.text}
+/// TODO
+/// ```
 #[derive(Debug)]
 pub struct SharedTensor<T> {
     /// The shape of the shared tensor.
     pub shape: Shape,
     /// A vector of buffers.
-    buffers: RefCell<Vec<(Location, Buffer<T>)>>,
+    copies: RefCell<Vec<(Address, Memory<T>)>>,
     /// Indicates whether or not memory is synchronized (synchronization state).
     ///
     /// There are only two possible states:
@@ -64,104 +92,107 @@ pub struct SharedTensor<T> {
 
 impl<T> SharedTensor<T> /* TODO where T: Scalar | Float */ {
 
-    /// Constructs a new `SharedTensor`.
+    /// Constructs a new `SharedTensor` with a shape of `sh`.
     pub fn new<I>(sh: I) -> Result<Self> where I: Into<Shape> {
 
         let shape = sh.into();
+        let copies = RefCell::new(vec![]);
+        let versions = u64Map::new();
 
-        Ok(SharedTensor {
-            shape,
-            buffers: RefCell::new(vec![]),
-            versions: u64Map::new(),
-            phantom: PhantomData,
-        })
+        Ok(SharedTensor { shape, copies, versions, phantom: PhantomData })
     }
 
-    /// Constructs a new `SharedTensor` from the supplied `chunk` of data.
+    /// Constructs a new `SharedTensor` from the supplied `chunk` of data with a shape of `sh`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #![allow(dead_code)]
+    ///
+    /// let framework = Native::new();
+    /// let ref backend = Backend::with(framework)?;
+    ///
+    /// let shared: SharedTensor<f32> = SharedTensor::with(backend, [2, 2], [1., 2., 3., 4.])?;
+    /// ```
     pub fn with<I, A>(backend: &Backend, sh: I, mut chunk: A) -> Result<Self> 
         where I: Into<Shape>, 
               A: AsMut<[T]> {
 
         let shape = sh.into();
         let mut slice = chunk.as_mut();
-        let buffer = backend.device::<T>().allocate_with(&shape, &mut slice)?;
-        let vec = vec![(backend.device::<T>().location(), buffer)];
-        let buffers = RefCell::new(vec);
+        let buffer = backend.compute_device::<T>().allocate_with(&shape, &mut slice)?;
+        let vec = vec![(backend.compute_device::<T>().addr(), buffer)];
+        let copies = RefCell::new(vec);
         let versions = u64Map::with(1);
 
-        Ok(SharedTensor { shape, buffers, versions, phantom: PhantomData })
+        Ok(SharedTensor { shape, copies, versions, phantom: PhantomData })
     }
 
-    // /// Allocate memory on a new device and track it.
-    // pub fn allocate(&mut self, backend: &Backend) -> Result {
+    /// Pre-allocate memory on the active device and track it.
+    pub fn allocate(&mut self, backend: &Backend) -> Result {
 
-    //     let buffer = backend.device::<T>().allocate(&self.shape)?;
+        let buffer = backend.compute_device::<T>().allocate(&self.shape)?;
 
-    //     unimplemented!()
-    // }
+        unimplemented!()
+    }
 }
 
-/// An `impl` block for the methods `SharedTensor::read`, `SharedTensor::read_write`, 
-/// and `SharedTensor::write`. The borrowck guarantees that the shared tensor outlives all of its
-/// tensors, and that there is only one mutable borrow. 
-///
-/// [TODO](https://github.com/alexandermorozov/collenchyma/blob/decoupling/src/tensor.rs#L391):
-///
-/// Therefore, we only need to make sure the memory locations won't be dropped or moved while 
-/// there are active tensors.
+/// An `impl` block containing the read/write/auto-sync logic.
 impl<T> SharedTensor<T> {
 
     /// View an underlying tensor for reading on the active device.
     ///
-    /// `SharedTensor::read` can fail if memory allocation fails or if the tensor isn't initialized.
+    /// This method can fail if memory allocation fails or if no memory is initialized.
     /// The borrowck guarantees that the shared tensor outlives all of its tensors.
-    pub fn read<'buf>(&'buf self, backend: &Backend) -> Result<Tensor<'buf, T>> {
+    pub fn view<'shared>(&'shared self, backend: &Backend) -> Result<Tensor<'shared, T>> {
         if self.versions.empty() {
             return Err(ErrorKind::UninitializedMemory.into());
         }
 
         let i = self.get_or_create_location_index(backend)?;
         self.sync_if_necessary(backend, i)?;
-        self.versions.insert(i, true);
+        self.versions.insert(i);
 
-        let borrowed_buffers = self.buffers.borrow();
+        let borrowed_copies = self.copies.borrow();
 
-        let (ref location, ref buffer) = borrowed_buffers[i];
+        let (ref address, ref buffer) = borrowed_copies[i];
 
-        Ok(unsafe { Tensor {
-            buffer: mem::transmute(buffer),
-            location: mem::transmute(location),
-        }})
+        let address = unsafe { utility::extend_lifetime::<'shared>(address) };
+        let memory = unsafe { utility::extend_lifetime::<'shared>(buffer) };
+
+        Ok(Tensor { address, memory })
     }
 
-    // /// View an underlying tensor for reading and writing on the active device. The memory 
-    // /// location is set as the latest.
-    // ///
-    // /// `SharedTensor::read_write` can fail is memory allocation fails or if the tensor 
-    // /// isn't initialized.
-    // pub fn read_write<'buf>(&'buf mut self, backend: &Backend) -> Result<TensorMut<'buf>> {
+    /// View an underlying tensor for reading and writing on the active device. The memory 
+    /// location is set as the latest.
+    ///
+    /// This method can fail is memory allocation fails or if no memory is initialized.
+    pub fn view_mut<'buf>(&'buf mut self, backend: &Backend) -> Result<TensorMut<'buf, T>> {
 
-    // }
+        unimplemented!()
+    }
 
-    // /// View an underlying tensor for writing only.
-    // ///
-    // /// `SharedTensor::write` skips synchronization and initialization logic since its data will
-    // /// be overwritten anyway. The caller must initialize all elements contained in the tensor. This
-    // /// convention isn't enforced, but failure to do so may result in undefined data later.
-    // ///
-    // /// If the caller fails to overwrite memory, it must call `invalidate` to return the vector
-    // /// to an uninitialized state.
-    // pub fn write<'buf>(&'buf mut self, backend: &Backend) -> Result<TensorMut<'buf>> {
+    /// View an underlying tensor for writing only.
+    ///
+    /// This method skips synchronization and initialization logic since its data will
+    /// be overwritten anyway. The caller must initialize all elements contained in the tensor. This
+    /// convention isn't enforced, but failure to do so may result in undefined data later.
+    ///
+    /// TODO
+    ///
+    /// * Add an `invalidate` method:
+    ///
+    ///     If the caller fails to overwrite memory, it must call `invalidate` to return the vector
+    ///     to an uninitialized state.
+    pub fn write<'buf>(&'buf mut self, backend: &Backend) -> Result<TensorMut<'buf, T>> {
 
-    // }
-}
+        unimplemented!()
+    }
 
-impl<T> SharedTensor<T> {
+    fn get_location_index(&self, address: &Address) -> Option<usize> {
 
-    fn get_location_index(&self, location: &Location) -> Option<usize> {
-
-        for (i, l) in self.buffers.borrow().iter().map(|&(ref l, _)| l).enumerate() {
-            if l.eq(location) {
+        for (i, l) in self.copies.borrow().iter().map(|&(ref l, _)| l).enumerate() {
+            if l.eq(address) {
                 return Some(i);
             }
         }
@@ -171,20 +202,20 @@ impl<T> SharedTensor<T> {
 
     fn get_or_create_location_index(&self, backend: &Backend) -> Result<usize> {
 
-        let location = backend.device::<T>().location();
+        let address = backend.compute_device::<T>().addr();
 
-        if let Some(i) = self.get_location_index(&location) {
+        if let Some(i) = self.get_location_index(&address) {
             return Ok(i);
         }
 
-        if self.buffers.borrow().len() == u64Map::CAPACITY {
+        if self.copies.borrow().len() == u64Map::CAPACITY {
             return Err(ErrorKind::BitMapCapacityExceeded.into());
         }
 
-        let buffer = backend.device::<T>().allocate(&self.shape)?;
-        self.buffers.borrow_mut().push((location, buffer));
+        let memory = backend.compute_device::<T>().allocate(&self.shape)?;
+        self.copies.borrow_mut().push((address, memory));
 
-        Ok(self.buffers.borrow().len() - 1)
+        Ok(self.copies.borrow().len() - 1)
     }
 
     // TODO: 
@@ -197,7 +228,7 @@ impl<T> SharedTensor<T> {
     // and `Native` <-> `OpenCL` in foreseeable future, so it's best to not over-engineer here.
     fn sync_if_necessary(&self, backend: &Backend, destination_index: usize) -> Result {
 
-        if self.versions.get() & (1 << destination_index) != 0 {
+        if self.versions.contains(destination_index) {
 
             return Ok(());
         }
@@ -210,19 +241,19 @@ impl<T> SharedTensor<T> {
 
         assert_ne!(source_index, destination_index);
 
-        let mut borrowed_buffers = self.buffers.borrow_mut();
+        let mut borrowed_copies = self.copies.borrow_mut();
 
         let (source, mut destination) = {
             if source_index < destination_index {
-                let (left, right) = borrowed_buffers.split_at_mut(destination_index);
-                (&left[source_index], &mut right[0])
+                let (left, right) = borrowed_copies.split_at_mut(destination_index);
+                (&mut left[source_index], &mut right[0])
             } else {
-                let (left, right) = borrowed_buffers.split_at_mut(source_index);
-                (&right[0], &mut left[destination_index])
+                let (left, right) = borrowed_copies.split_at_mut(source_index);
+                (&mut right[0], &mut left[destination_index])
             }
         };
 
-        backend.device().sync_out(&source.1, &mut destination.1)
+        backend.compute_device().sync_out(&source.1, &mut destination.1)
 
         // TODO:
         //
@@ -232,16 +263,12 @@ impl<T> SharedTensor<T> {
 
 
         // dst_loc.mem_transfer.sync_in(
-        //      dst_loc.mem.as_mut(), src_loc.device.deref(),
+        //      dst_loc.mem.as_mut(), src_loc.compute_device.deref(),
         //      src_loc.mem.deref()).map_err(|e| e.into())
 
         // TODO: try transfer indirectly via Native backend
     }
 }
-
-/// Represents the location of a device.
-#[derive(Debug, Eq, PartialEq)]
-pub struct Location { context: isize, device: isize, framework: &'static str }
 
 /// Describes the shape of a tensor.
 #[derive(Clone, Debug)]
@@ -298,14 +325,14 @@ impl convert::From<[usize; 2]> for Shape {
 ///
 /// Parameterization over mutability would help here..
 pub struct Tensor<'a, T: 'a> {
-    buffer: &'a Buffer<T>,
-    location: &'a Location,
+    address: &'a Address,
+    memory: &'a Memory<T>,
 }
 
 /// A mutable view.
 pub struct TensorMut<'a, T: 'a> {
-    buffer: &'a mut Buffer<T>,
-    location: &'a Location,
+    address: &'a Address,
+    memory: &'a mut Memory<T>,
 }
 
 /// A "newtype" with an internal type of `Cell<u64>`. `u64Map` uses [bit manipulation][1] to manage 
@@ -338,11 +365,27 @@ impl u64Map {
         self.0.get() == 0
     }
 
-    fn insert(&self, k: usize, v: bool) {
-        self.0.set(self.0.get() | ((v as u64) << k))
+    fn insert(&self, k: usize) {
+        self.0.set(self.0.get() | (1 << k))
+    }
+
+    fn contains(&self, k: usize) -> bool {
+        k < Self::CAPACITY && (self.0.get() & (1 << k) != 0)
     }
 
     fn latest(&self) -> u32 {
         self.0.get().trailing_zeros()
+    }
+}
+
+mod tests {
+    use super::u64Map;
+
+    #[test]
+    fn u64_map_contains() {
+        let key = 10;
+        let u64_map = u64Map::new();
+        u64_map.insert(key);
+        assert!(u64_map.contains(key))
     }
 }

@@ -90,6 +90,7 @@
 //! [Collenchyma]: https://github.com/autumnai/collenchyma
 //! [Autumn]: https://github.com/autumnai
 
+#![allow(warnings)]
 // #![deny(missing_docs, unused_import_braces, unused_qualifications)]
 #![feature(associated_consts, field_init_shorthand, libc, type_ascription, untagged_unions)]
 
@@ -106,18 +107,12 @@ pub mod error;
 pub mod frameworks;
 
 pub use self::backend::Backend;
-pub use self::buffer::Buffer;
-pub use self::context::Context;
-pub use self::device::Device;
-pub use self::framework::Framework;
-pub use self::processor::Processor;
-pub use self::tensor::{Location, Shape, SharedTensor, Tensor, TensorMut, u64Map};
+pub use self::interface::{Address, ComputeDevice, Context, Framework, Hardware, HardwareKind};
+pub use self::memory::Memory;
+pub use self::tensor::{Shape, SharedTensor, Tensor, TensorMut, u64Map};
 
 mod backend;
-mod buffer;
-mod context;
-mod device;
-mod framework;
-mod processor;
+mod interface;
+mod memory;
 mod tensor;
 mod utility;

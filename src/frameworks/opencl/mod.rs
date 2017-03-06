@@ -54,9 +54,12 @@ pub struct OpenCL {
     // pub available_devices: Vec<OpenClDevice>,
 }
 
-/// A type wrapping around an OpenCL buffer id that manages its deallocation.
+/// A `Memory` wraps around an OpenCL buffer id that manages its deallocation, named 
+/// as such for consistency's sake.
+///
+/// OpenCL buffers are only context specific, not device specific.
 #[derive(Clone, Debug)]
-pub struct OpenClBuffer {
+pub struct Memory {
     hl: hl::Buffer,
     capacity: usize,
 }

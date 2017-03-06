@@ -1,4 +1,4 @@
-use super::{Context, Device, Framework};
+use super::{Context, ComputeDevice, Framework};
 use super::error::Result;
 
 /// The heart of Parenchyma - provides an interface for running parallel computations on one or 
@@ -47,7 +47,7 @@ use super::error::Result;
 #[derive(Debug)]
 pub struct Backend {
     /// The initialized framework.
-    pub framework: Box<Framework>,
+    pub framework: Box<Framework>, /* &'static str,*/
     /// The context associated with the `framework`.
     ///
     /// Contexts are the heart of both OpenCL and CUDA applications. See the [`Context`] trait for
@@ -56,7 +56,9 @@ pub struct Backend {
     /// [`Context`]: (./trait.Context.html)
     pub context: Box<Context>,
     /// The chosen device
-    device: usize,
+    ///
+    /// The default active device is the first device found (index = `0`).
+    active: usize,
 }
 
 impl Backend {
@@ -67,18 +69,21 @@ impl Backend {
         unimplemented!()
     }
 
-    /// Attempts to construct a backend from the specified `framework` and the index of 
-    /// the `selected` device.
-    pub fn with<F>(framework: F, selected: usize) -> Result<Backend> where F: Framework {
+    /// Attempts to construct a backend from the specified `framework`.
+    pub fn with<F>(framework: F) -> Result<Backend> where F: Framework {
 
         unimplemented!()
     }
+
+    // /// Try all provided `frameworks` in the specified order, choosing the first framework that 
+    // // initializes without failure.
+    // pub fn try(frameworks: Vec<Box<Framework>>) -> Result<Backend>;
 }
 
 impl Backend {
 
     /// Returns the current device.
-    pub fn device<T>(&self) -> &Device<T> {
+    pub fn compute_device<T>(&self) -> &ComputeDevice<T> {
 
         unimplemented!()
     }
