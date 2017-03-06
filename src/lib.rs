@@ -111,7 +111,7 @@ pub use self::context::Context;
 pub use self::device::Device;
 pub use self::framework::Framework;
 pub use self::processor::Processor;
-pub use self::tensor::{Shape, SharedTensor};
+pub use self::tensor::{Location, Shape, SharedTensor, Tensor, TensorMut, u64Map};
 
 mod backend;
 mod buffer;
