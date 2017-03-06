@@ -3,13 +3,13 @@ extern crate parenchyma;
 use parenchyma::{Backend, SharedTensor};
 
 fn main() {
-    let backend = Backend::new().expect("failed to construct backend");
-    let x = SharedTensor::new(&backend, [1], &mut [10.0]).expect("failed to alloc memory");
-    let mut result = SharedTensor::new(&backend, [1], &mut [0.0]).expect("failed to alloc memory");
+    let backend = Backend::new()?;
+    let x = SharedTensor::with(&backend, [1], &mut [10.0])?;
+    let mut result = SharedTensor::with(&backend, [1], &mut [0.0])?;
 
-    parenchyma::ops::sigmoid(&backend, &x, &result).expect("failed to compute");
+    backend.sigmoid(&x, &result)?;
 
-    let tensor = result.view(&backend).expect("failed to construct tensor");
+    let tensor = result.view(&backend)?;
     let output = tensor.buffer()[0];
 
     // TODO 

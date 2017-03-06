@@ -5,7 +5,10 @@ use super::error::Result;
 pub trait Device<T> {
 
     /// Allocates memory on the device.
-    fn allocate(&self, shape: Shape, slice: Option<&mut [T]>) -> Result<Buffer<T>>;
+    fn allocate(&self, shape: &Shape) -> Result<Buffer<T>>;
+
+    /// Allocates memory on the device.
+    fn allocate_with(&self, shape: &Shape, slice: &mut [T]) -> Result<Buffer<T>>;
 
     // /// Synchronizes `memory` from `source`.
     // fn sync_in(&self, memory: &mut Buffer<T>, source: &Buffer<T>) -> Result;

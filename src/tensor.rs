@@ -1,17 +1,24 @@
-use ndarray::{Array, IxDyn};
 use std::{convert, mem};
 use std::marker::PhantomData;
 
 use super::Backend;
 use super::error::Result;
 
-/// A native tensor.
-pub type Tensor<T> = Array<T, IxDyn>;
+/// The maximum number of bits in the bit map can contain.
+const BIT_MAP_CAPACITY: usize = 64;
 
-/// A shared tensor for framework-agnostic, memory-aware, n-dimensional storage.
+/// A shared tensor for framework-agnostic, memory-aware, n-dimensional storage. 
 ///
-/// Container that handles synchronization of memory of type `T`, by which it is parameterized, and 
-/// provides the functionality for memory management across devices.
+/// A `SharedTensor` is used for the purpose of tracking the location of memory across devices 
+/// for one similar piece of data. `SharedTensor` handles synchronization of memory of type `T`, by 
+/// which it is parameterized, and provides the functionality for memory management across devices.
+///
+/// ## Terminology
+///
+/// In Parenchyma, multidimensional Rust arrays represent tensors. A vector, a tensor with a 
+/// rank of 1, in an n-dimensional space is represented by a one-dimensional Rust array of 
+/// length n. Scalars, tensors with a rank of 0, are represented by numbers (e.g., `3`). An array of 
+/// arrays, such as `[[1, 2, 3], [4, 5, 6]]`, represents a tensor with a rank of 2.
 ///
 /// A tensor is essentially a generalization of vectors. A Parenchyma shared tensor tracks the memory 
 /// copies of the numeric data of a tensor across the device of the backend and manages:
@@ -22,51 +29,91 @@ pub type Tensor<T> = Array<T, IxDyn>;
 ///
 /// This is important, as it provides a unified data interface for executing tensor operations 
 /// on CUDA, OpenCL and common host CPU.
-///
-/// ## Terminology
-///
-/// In Parenchyma, multidimensional Rust arrays represent tensors. A vector, a tensor with a 
-/// rank of 1, in an n-dimensional space is represented by a one-dimensional Rust array of 
-/// length n. Scalars, tensors with a rank of 0, are represented by numbers (e.g., `3`). An array of 
-/// arrays, such as `[[1, 2, 3], [4, 5, 6]]`, represents a tensor with a rank of 2.
 #[derive(Debug)]
 pub struct SharedTensor<T> {
     /// The shape of the shared tensor.
     pub shape: Shape,
+    /// Indicates whether or not memory is synchronized (synchronization state).
+    ///
+    /// There are only two possible states:
+    ///
+    /// `false` = outdated or uninitialized
+    /// `true` = latest or up-to-date)
+    ///
+    /// The `bool`s are packed into an integer and the integer can be set/reset in one operation.
+    /// The integer type used is `u64` (used to store bitmasks), therefore the maximum number of 
+    /// memories is 64.
+    ///
+    /// note: `BitSet` can be used instead (for the purpose of having multiple nodes in a cluster?) 
+    /// of a single integer in exchange for some runtime cost and will likely be allowed in the 
+    /// near future via a parameter at the type level or a feature flag.
+    ///
+    /// `u64` requires no extra allocations and no access indirection, but is limited. `BitSet` is
+    /// slower.
+    ///
+    /// note: currently relies on the `const` `MAP_CAPACITY`, though there are plans to add an 
+    /// associated constant or `const fn`.
+    ///
+    /// Each time a `Tensor` is mutably borrowed from `SharedTensor`, the version of the 
+    /// corresponding memory is _ticked_ or increased. The value `0` means that the memory object 
+    /// at that specific location is uninitialized.
+    versions: u64,
     /// A marker for `T`.
     phantom: PhantomData<T>,
 }
 
-impl<T> SharedTensor<T> /*where T: Scalar | Float */ {
+impl<T> SharedTensor<T> /* TODO where T: Scalar | Float */ {
 
     /// Constructs a new `SharedTensor`.
-    pub fn new<I>(backend: &Backend, shape: I) -> Result<Self> where I: Into<Shape> {
+    pub fn new<I>(sh: I) -> Result<Self> where I: Into<Shape> {
+
+        let shape = sh.into();
 
         unimplemented!()
     }
 
     /// Constructs a new `SharedTensor` from the supplied `chunk` of data.
-    pub fn with<I, A>(backend: &Backend, shape: I, chunk: A) -> Result<Self> 
+    pub fn with<I, A>(backend: &Backend, sh: I, mut chunk: A) -> Result<Self> 
         where I: Into<Shape>, 
               A: AsMut<[T]> {
 
-        let device = backend.device();
+        let shape = sh.into();
+        let mut slice = chunk.as_mut();
+        let buffer = backend.device::<T>().allocate_with(&shape, &mut slice)?;
+
+        unimplemented!()
+    }
+}
+
+impl<T> SharedTensor<T> {
+
+    /// Allocate memory on a new device and track it.
+    pub fn allocate(&mut self, backend: &Backend) -> Result {
+
+        let buffer = backend.device::<T>().allocate(&self.shape)?;
+
+        unimplemented!()
     }
 }
 
 // impl<T> SharedTensor<T> {
 
-//     // /// Returns the internal representation of the tensor.
+//     // /// Returns the native internal representation of the tensor.
 //     // pub fn tensor(&self) -> Tensor<T> {
 
 //     //     unimplemented!()
 //     // }
-
-//     /// Returns the size of the allocated memory in bytes.
-//     pub fn allocated(&self, capacity: usize) -> usize {
-//         capacity * mem::size_of::<T>()
-//     }
 // }
+
+// /// An immutable view.
+// pub struct Tensor<'a, T: 'a> {
+//     buffer: &'a Buffer<T>,
+//     address: _,
+//     shape: &'a Shape,
+// }
+
+// /// A mutable view.
+// pub struct TensorMut<T>;
 
 /// Describes the shape of a tensor.
 #[derive(Clone, Debug)]

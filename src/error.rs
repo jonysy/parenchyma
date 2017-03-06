@@ -3,7 +3,7 @@
 use std::{error, fmt, result};
 
 /// A specialized `Result` type.
-pub type Result<T = (), E = Error> = result::Result<T, E>;
+pub type Result<T = ()> = result::Result<T, Error>;
 
 /// The core error type used in Parenchyma.
 #[derive(Debug)]

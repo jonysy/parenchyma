@@ -1,5 +1,5 @@
 use frameworks::opencl::OpenClBuffer;
-use super::Tensor;
+use super::utility::Array;
 
 /// Represents a buffer object.
 ///
@@ -10,7 +10,7 @@ pub enum Buffer<T> {
     // Cuda(..),
 
     /// The native memory representation.
-    Native(Tensor<T>),
+    Native(Array<T>),
 
     /// An OpenCL buffer.
     OpenCl(OpenClBuffer),
@@ -18,7 +18,7 @@ pub enum Buffer<T> {
 
 impl<T> Buffer<T> {
     /// Returns a reference to the native memory representation.
-    pub fn as_native(&self) -> Option<&Tensor<T>> {
+    pub fn as_native(&self) -> Option<&Array<T>> {
         match *self {
             Buffer::Native(ref native) => Some(native),
             _ => None
@@ -26,7 +26,7 @@ impl<T> Buffer<T> {
     }
 
     /// Returns a mutable reference to the native memory representation.
-    pub fn as_mut_native(&mut self) -> Option<&mut Tensor<T>> {
+    pub fn as_mut_native(&mut self) -> Option<&mut Array<T>> {
         match *self {
             Buffer::Native(ref mut native) => Some(native),
             _ => None
@@ -34,7 +34,7 @@ impl<T> Buffer<T> {
     }
 
     /// Returns the native memory representation, consuming the convertee.
-    pub fn into_native(self) -> Option<Tensor<T>> {
+    pub fn into_native(self) -> Option<Array<T>> {
         match self {
             Buffer::Native(native) => Some(native),
             _ => None
