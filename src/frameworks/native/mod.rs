@@ -1,20 +1,11 @@
 //! Native backend support.
 
-use ndarray::{Array, IxDyn};
+pub use self::context::NativeContext;
+pub use self::device::NativeDevice;
+pub use self::framework::Native;
+pub use self::memory::NativeMemory;
 
-/// Provides the native framework.
-#[derive(Debug)]
-pub struct Native;
-
-/// Represents a native array.
-///
-/// note: named `Memory` for consistency across frameworks.
-pub type Memory<T> = Array<T, IxDyn>;
-
-/// The native context.
-#[derive(Clone, Debug)]
-pub struct NativeContext;
-
-/// The native device.
-#[derive(Clone, Debug)]
-pub struct NativeDevice;
+mod context;
+mod device;
+mod framework;
+mod memory;

@@ -1,37 +1,25 @@
-use std::os::raw;
+//! Wrapper module for OpenCL
+#![allow(missing_docs, unused_qualifications)]
+
+pub use self::error::{Error, ErrorKind, Result};
+pub use self::functions::{nplatforms, platforms};
+
+mod error;
+mod functions;
+mod utility;
+
 use std::{clone, cmp, ffi, mem, ops, ptr};
-
-use super::Result;
-use super::utility;
-use super::super::sh;
-
-/// Number of platforms
-pub fn nplatforms() -> Result<u32> {
-    unsafe {
-        let mut nplatforms = 0;
-        let ret_value = sh::clGetPlatformIDs(0, ptr::null_mut(), &mut nplatforms);
-        return utility::check(ret_value, || nplatforms);
-    }
-}
-
-/// Obtain the list of platforms available.
-pub fn platforms() -> Result<Vec<Platform>> {
-    unsafe {
-        let nplatforms = nplatforms()?;
-        let mut vec_id = vec![0 as sh::cl_platform_id; nplatforms as usize];
-        let ret_value = sh::clGetPlatformIDs(nplatforms, vec_id.as_mut_ptr(), ptr::null_mut());
-        return utility::check(ret_value, || vec_id.iter().map(|&id| Platform(id)).collect());
-    }
-}
+use std::os::raw::c_void;
+use super::foreign;
 
 #[derive(Debug)]
-pub struct Buffer(sh::cl_mem);
+pub struct Buffer(foreign::cl_mem);
 
 impl Buffer {
     /// Increments the memory object reference count.
     pub fn retain(&self) -> Result {
         unsafe {
-            let ret_value = sh::clRetainMemObject(self.0);
+            let ret_value = foreign::clRetainMemObject(self.0);
 
             return utility::check(ret_value, || {});
         }
@@ -40,7 +28,7 @@ impl Buffer {
     /// Decrements the memory object reference count.
     pub fn release(&self) -> Result {
         unsafe {
-            let ret_value = sh::clReleaseMemObject(self.0);
+            let ret_value = foreign::clReleaseMemObject(self.0);
             
             return utility::check(ret_value, || {});
         }
@@ -61,9 +49,13 @@ impl ops::Drop for Buffer {
 }
 
 #[derive(Debug)]
-pub struct Context(sh::cl_context);
+pub struct Context(foreign::cl_context);
 
 impl Context {
+    pub fn ptr(&self) -> &foreign::cl_context {
+        &self.0
+    }
+
     /// Creates an OpenCL context.
     ///
     /// An OpenCL context is created with one or more devices. Contexts are used by the OpenCL 
@@ -92,7 +84,7 @@ impl Context {
             // The number of devices specified in the devices argument.
             let number_of_devices = devices.len() as u32;
             // A pointer to a list of unique devices returned by clGetDeviceIDs for a platform.
-            let raw_devices: Vec<*mut raw::c_void> = devices.iter().map(|d| d.0).collect();
+            let raw_devices: Vec<*mut c_void> = devices.iter().map(|d| d.0).collect();
             let raw_devices_ptr = raw_devices.as_ptr();
 
             // A callback function that can be registered by the application. This callback function 
@@ -111,15 +103,15 @@ impl Context {
             // `user_data` is a pointer to user supplied data.
             //
             // TODO
-            let pfn_notify: extern fn(*const i8, *const raw::c_void, usize, *mut raw::c_void) 
+            let pfn_notify: extern fn(*const i8, *const c_void, usize, *mut c_void) 
                 = mem::transmute(ptr::null::<fn()>());
 
             // Passed as the `user_data` argument when pfn_notify is called. user_data can be NULL.
             //
             // TODO
-            let user_data: *mut raw::c_void = ptr::null_mut();
+            let user_data: *mut c_void = ptr::null_mut();
 
-            let cl_context = sh::clCreateContext(
+            let cl_context = foreign::clCreateContext(
                 properties, 
                 number_of_devices, 
                 raw_devices_ptr, 
@@ -128,7 +120,7 @@ impl Context {
                 &mut errcode_ret
             );
 
-            let ret_value = sh::CLStatus::new(errcode_ret)
+            let ret_value = foreign::CLStatus::new(errcode_ret)
                 .expect("failed to convert `i32` to `CLStatus`");
 
             return utility::check(ret_value, || Context(cl_context));
@@ -149,17 +141,17 @@ impl Context {
     /// application. The size of the buffer that host_ptr points to must be greater than or equal 
     /// to the size bytes.
     pub fn create_buffer<F, H>(&self, f: F, size: usize, h: H) -> Result<Buffer> 
-        where F: Into<Option<sh::cl_bitfield>>,
-              H: Into<Option<*mut raw::c_void>>,
+        where F: Into<Option<foreign::cl_bitfield>>,
+              H: Into<Option<*mut c_void>>,
     {
         unsafe {
             let mut errcode_ret: i32 = 0;
-            let flags = f.into().unwrap_or(sh::CL_MEM_READ_WRITE);
+            let flags = f.into().unwrap_or(foreign::CL_MEM_READ_WRITE);
             let host_pointer = h.into().unwrap_or(ptr::null_mut());
 
-            let mem = sh::clCreateBuffer(self.0, flags, size, host_pointer, &mut errcode_ret);
+            let mem = foreign::clCreateBuffer(self.0, flags, size, host_pointer, &mut errcode_ret);
 
-            let ret_value = sh::CLStatus::new(errcode_ret)
+            let ret_value = foreign::CLStatus::new(errcode_ret)
                 .expect("failed to convert `i32` to `CLStatus`");
 
             return utility::check(ret_value, || Buffer(mem));
@@ -185,9 +177,9 @@ impl Context {
             let ptrs: Vec<*const i8> = cstrings.iter().map(|s| s.as_ptr()).collect();
             let ptr = ptrs.as_ptr();
 
-            let cl_program = sh::clCreateProgramWithSource(self.0, n, ptr, lens_ptr, &mut errcode);
+            let cl_program = foreign::clCreateProgramWithSource(self.0, n, ptr, lens_ptr, &mut errcode);
 
-            let ret_value = sh::CLStatus::new(errcode).expect("failed to convert i32 to CLStatus");
+            let ret_value = foreign::CLStatus::new(errcode).expect("failed to convert i32 to CLStatus");
 
             return utility::check(ret_value, || Program(cl_program));
         }
@@ -196,7 +188,7 @@ impl Context {
     /// Increment the context reference count.
     fn retain(&self) -> Result {
         unsafe {
-            let ret_value = sh::clRetainContext(self.0);
+            let ret_value = foreign::clRetainContext(self.0);
             return utility::check(ret_value, || {});
         }
     }
@@ -204,7 +196,7 @@ impl Context {
     /// Decrement the context reference count.
     fn release(&self) -> Result {
         unsafe {
-            let ret_value = sh::clReleaseContext(self.0);
+            let ret_value = foreign::clReleaseContext(self.0);
             return utility::check(ret_value, || {});
         }
     }
@@ -217,6 +209,8 @@ impl clone::Clone for Context {
         Context(self.0)
     }
 }
+
+impl cmp::Eq for Context { }
 
 impl cmp::PartialEq<Context> for Context {
 
@@ -235,20 +229,24 @@ impl ops::Drop for Context {
 
 /// Newtype with an internal type of `cl_device_id`.
 #[derive(Clone, Debug)]
-pub struct Device(sh::cl_device_id);
+pub struct Device(foreign::cl_device_id);
 
 impl Device {
+    pub fn ptr(&self) -> &foreign::cl_device_id {
+        &self.0
+    }
+
     /// The default compute device address space size specified as an unsigned integer value 
     /// in bits. Currently supported values are 32 or 64 bits.
     pub fn address_bits(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_ADDRESS_BITS;
+        let parameter = foreign::CL_DEVICE_ADDRESS_BITS;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
 
     /// Is CL_TRUE if the device is available and CL_FALSE if the device is not available.
     pub fn available(&self) -> Result<bool> {
-        let parameter = sh::CL_DEVICE_AVAILABLE;
+        let parameter = foreign::CL_DEVICE_AVAILABLE;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res != 0)
     }
@@ -257,7 +255,7 @@ impl Device {
     /// program source. Is CL_TRUE if the compiler is available. This can be CL_FALSE for the 
     /// embedded platform profile only.
     pub fn compiler_available(&self) -> Result<bool> {
-        let parameter = sh::CL_DEVICE_COMPILER_AVAILABLE;
+        let parameter = foreign::CL_DEVICE_COMPILER_AVAILABLE;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res != 0)
     }
@@ -282,7 +280,7 @@ impl Device {
 
     /// Is CL_TRUE if the OpenCL device is a little endian device and CL_FALSE otherwise.
     pub fn endian_little(&self) -> Result<bool> {
-        let parameter = sh::CL_DEVICE_ENDIAN_LITTLE;
+        let parameter = foreign::CL_DEVICE_ENDIAN_LITTLE;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res != 0)
     }
@@ -291,7 +289,7 @@ impl Device {
     /// etc. in the device. Is CL_FALSE if the device does not implement error correction. This can 
     /// be a requirement for certain clients of OpenCL.
     pub fn error_correction_support(&self) -> Result<bool> {
-        let parameter = sh::CL_DEVICE_ERROR_CORRECTION_SUPPORT;
+        let parameter = foreign::CL_DEVICE_ERROR_CORRECTION_SUPPORT;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res != 0)
     }
@@ -325,7 +323,7 @@ impl Device {
     /// cl_khr_byte_addressable_store
     /// cl_khr_fp16
     pub fn extensions(&self) -> Result<Vec<String>> {
-        let parameter = sh::CL_DEVICE_EXTENSIONS;
+        let parameter = foreign::CL_DEVICE_EXTENSIONS;
         let res = self.info(parameter, |size| vec![0u8; size], |b| b.as_mut_ptr() as _);
         res.map(|b| String::from_utf8(b).expect("UTF8 string")).map(|st| {
             st.split_whitespace().map(|s| s.into()).collect()
@@ -334,7 +332,7 @@ impl Device {
 
     /// Size of global memory cache in bytes.
     pub fn global_mem_cache_size(&self) -> Result<u64> {
-        let parameter = sh::CL_DEVICE_GLOBAL_MEM_CACHE_SIZE;
+        let parameter = foreign::CL_DEVICE_GLOBAL_MEM_CACHE_SIZE;
         let res = self.info(parameter, |_| 0u64, |b| b as *mut u64 as _)?;
         Ok(res)
     }
@@ -348,14 +346,14 @@ impl Device {
 
     /// Size of global memory cache line in bytes.
     pub fn global_mem_cacheline_size(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE;
+        let parameter = foreign::CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
 
     /// Size of global memory cache line in bytes.
     pub fn global_mem_size(&self) -> Result<u64> {
-        let parameter = sh::CL_DEVICE_GLOBAL_MEM_SIZE;
+        let parameter = foreign::CL_DEVICE_GLOBAL_MEM_SIZE;
         let res = self.info(parameter, |_| 0u64, |b| b as *mut u64 as _)?;
         Ok(res)
     }
@@ -378,7 +376,7 @@ impl Device {
 
     /// Is CL_TRUE if images are supported by the OpenCL device and CL_FALSE otherwise.
     pub fn image_support(&self) -> Result<bool> {
-        let parameter = sh::CL_DEVICE_IMAGE_SUPPORT;
+        let parameter = foreign::CL_DEVICE_IMAGE_SUPPORT;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res != 0)
     }
@@ -386,7 +384,7 @@ impl Device {
     /// Max height of 2D image in pixels. The minimum value is 8192 if CL_DEVICE_IMAGE_SUPPORT 
     /// is CL_TRUE.
     pub fn image2d_max_height(&self) -> Result<usize> {
-        let parameter = sh::CL_DEVICE_IMAGE2D_MAX_HEIGHT;
+        let parameter = foreign::CL_DEVICE_IMAGE2D_MAX_HEIGHT;
         let res = self.info(parameter, |_| 0usize, |b| b as *mut usize as _)?;
         Ok(res)
     }
@@ -394,7 +392,7 @@ impl Device {
     /// Max width of 2D image in pixels. The minimum value is 8192 if CL_DEVICE_IMAGE_SUPPORT 
     /// is CL_TRUE.
     pub fn image2d_max_width(&self) -> Result<usize> {
-        let parameter = sh::CL_DEVICE_IMAGE2D_MAX_WIDTH;
+        let parameter = foreign::CL_DEVICE_IMAGE2D_MAX_WIDTH;
         let res = self.info(parameter, |_| 0usize, |b| b as *mut usize as _)?;
         Ok(res)
     }
@@ -402,7 +400,7 @@ impl Device {
     /// Max depth of 3D image in pixels. The minimum value is 2048 if CL_DEVICE_IMAGE_SUPPORT 
     /// is CL_TRUE.
     pub fn image3d_max_depth(&self) -> Result<usize> {
-        let parameter = sh::CL_DEVICE_IMAGE3D_MAX_DEPTH;
+        let parameter = foreign::CL_DEVICE_IMAGE3D_MAX_DEPTH;
         let res = self.info(parameter, |_| 0usize, |b| b as *mut usize as _)?;
         Ok(res)
     }
@@ -410,7 +408,7 @@ impl Device {
     /// Max height of 3D image in pixels. The minimum value is 2048 if CL_DEVICE_IMAGE_SUPPORT 
     /// is CL_TRUE.
     pub fn image3d_max_height(&self) -> Result<usize> {
-        let parameter = sh::CL_DEVICE_IMAGE3D_MAX_HEIGHT;
+        let parameter = foreign::CL_DEVICE_IMAGE3D_MAX_HEIGHT;
         let res = self.info(parameter, |_| 0usize, |b| b as *mut usize as _)?;
         Ok(res)
     }
@@ -418,14 +416,14 @@ impl Device {
     /// Max width of 3D image in pixels. The minimum value is 2048 if CL_DEVICE_IMAGE_SUPPORT 
     /// is CL_TRUE.
     pub fn image3d_max_width(&self) -> Result<usize> {
-        let parameter = sh::CL_DEVICE_IMAGE3D_MAX_WIDTH;
+        let parameter = foreign::CL_DEVICE_IMAGE3D_MAX_WIDTH;
         let res = self.info(parameter, |_| 0usize, |b| b as *mut usize as _)?;
         Ok(res)
     }
 
     /// Size of local memory arena in bytes. The minimum value is 16 KB.
     pub fn local_mem_size(&self) -> Result<u64> {
-        let parameter = sh::CL_DEVICE_LOCAL_MEM_SIZE;
+        let parameter = foreign::CL_DEVICE_LOCAL_MEM_SIZE;
         let res = self.info(parameter, |_| 0u64, |b| b as *mut u64 as _)?;
         Ok(res)
     }
@@ -439,14 +437,14 @@ impl Device {
 
     /// Size of local memory arena in bytes. The minimum value is 16 KB.
     pub fn max_clock_frequency(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_MAX_CLOCK_FREQUENCY;
+        let parameter = foreign::CL_DEVICE_MAX_CLOCK_FREQUENCY;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
 
     /// The number of parallel compute cores on the OpenCL device. The minimum value is 1.
     pub fn max_compute_units(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_MAX_COMPUTE_UNITS;
+        let parameter = foreign::CL_DEVICE_MAX_COMPUTE_UNITS;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
@@ -454,14 +452,14 @@ impl Device {
     /// Max number of arguments declared with the __constant qualifier in a kernel. The minimum 
     /// value is 8.
     pub fn max_constant_args(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_MAX_CONSTANT_ARGS;
+        let parameter = foreign::CL_DEVICE_MAX_CONSTANT_ARGS;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
 
     /// Max size in bytes of a constant buffer allocation. The minimum value is 64 KB.
     pub fn max_constant_buffer_size(&self) -> Result<u64> {
-        let parameter = sh::CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE;
+        let parameter = foreign::CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE;
         let res = self.info(parameter, |_| 0u64, |b| b as *mut u64 as _)?;
         Ok(res)
     }
@@ -469,14 +467,14 @@ impl Device {
     /// Max size of memory object allocation in bytes. The minimum value is 
     /// max (1/4th of CL_DEVICE_GLOBAL_MEM_SIZE, 128*1024*1024)
     pub fn max_mem_alloc_size(&self) -> Result<u64> {
-        let parameter = sh::CL_DEVICE_MAX_MEM_ALLOC_SIZE;
+        let parameter = foreign::CL_DEVICE_MAX_MEM_ALLOC_SIZE;
         let res = self.info(parameter, |_| 0u64, |b| b as *mut u64 as _)?;
         Ok(res)
     }
 
     /// Max size in bytes of the arguments that can be passed to a kernel. The minimum value is 256.
     pub fn max_parameter_size(&self) -> Result<usize> {
-        let parameter = sh::CL_DEVICE_MAX_PARAMETER_SIZE;
+        let parameter = foreign::CL_DEVICE_MAX_PARAMETER_SIZE;
         let res = self.info(parameter, |_| 0usize, |b| b as *mut usize as _)?;
         Ok(res)
     }
@@ -484,7 +482,7 @@ impl Device {
     /// Max number of simultaneous image objects that can be read by a kernel. The minimum value 
     /// is 128 if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE.
     pub fn max_read_image_args(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_MAX_READ_IMAGE_ARGS;
+        let parameter = foreign::CL_DEVICE_MAX_READ_IMAGE_ARGS;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
@@ -492,7 +490,7 @@ impl Device {
     /// Maximum number of samplers that can be used in a kernel. The minimum value is 16 
     /// if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE.
     pub fn max_samplers(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_MAX_SAMPLERS;
+        let parameter = foreign::CL_DEVICE_MAX_SAMPLERS;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
@@ -500,7 +498,7 @@ impl Device {
     /// Maximum number of work-items in a work-group executing a kernel using the data parallel 
     /// execution model. (Refer to clEnqueueNDRangeKernel). The minimum value is 1.
     pub fn max_work_group_size(&self) -> Result<usize> {
-        let parameter = sh::CL_DEVICE_MAX_WORK_GROUP_SIZE;
+        let parameter = foreign::CL_DEVICE_MAX_WORK_GROUP_SIZE;
         let res = self.info(parameter, |_| 0usize, |b| b as *mut usize as _)?;
         Ok(res)
     }
@@ -508,7 +506,7 @@ impl Device {
     /// Maximum dimensions that specify the global and local work-item IDs used by the data 
     /// parallel execution model. (Refer to clEnqueueNDRangeKernel). The minimum value is 3.
     pub fn max_work_item_dimensions(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS;
+        let parameter = foreign::CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
@@ -519,7 +517,7 @@ impl Device {
     /// Returns n size_t entries, where n is the value returned by the query 
     /// for CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS. The minimum value is (1, 1, 1).
     pub fn max_work_item_sizes(&self) -> Result<Vec<usize>> {
-        let parameter = sh::CL_DEVICE_MAX_WORK_ITEM_SIZES;
+        let parameter = foreign::CL_DEVICE_MAX_WORK_ITEM_SIZES;
         let ve = |size| vec![1usize; size / mem::size_of::<usize>()];
         let res = self.info(parameter, ve, |b| b.as_mut_ptr() as _)?;
 
@@ -529,28 +527,28 @@ impl Device {
     /// Max number of simultaneous image objects that can be written to by a kernel. The minimum 
     /// value is 8 if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE.
     pub fn max_write_image_args(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_MAX_WRITE_IMAGE_ARGS;
+        let parameter = foreign::CL_DEVICE_MAX_WRITE_IMAGE_ARGS;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
 
     /// Describes the alignment in bits of the base address of any allocated memory object.
     pub fn mem_base_addr_align(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_MEM_BASE_ADDR_ALIGN;
+        let parameter = foreign::CL_DEVICE_MEM_BASE_ADDR_ALIGN;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
 
     /// The smallest alignment in bytes which can be used for any data type.
     pub fn min_data_type_align_size(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE;
+        let parameter = foreign::CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
 
     /// Device name string.
     pub fn name(&self) -> Result<String> {
-        let parameter = sh::CL_DEVICE_NAME;
+        let parameter = foreign::CL_DEVICE_NAME;
         let res = self.info(parameter, |size| vec![0u8; size], |b| b.as_mut_ptr() as _);
         res.map(|b| String::from_utf8(b).unwrap())
     }
@@ -558,7 +556,7 @@ impl Device {
 //    /// The platform associated with this device.
 //    pub fn platform(&self) -> Result {
 //
-//        let _ = sh::CL_DEVICE_PLATFORM;
+//        let _ = foreign::CL_DEVICE_PLATFORM;
 //        unimplemented!()
 //    }
 
@@ -570,7 +568,7 @@ impl Device {
 //    /// must return 0.
 //    pub fn preferred_vector_width_char(&self) -> Result<u32> {
 //
-//        let _ = sh::CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR;
+//        let _ = foreign::CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR;
 //        
 //        unimplemented!()
 //    }
@@ -583,7 +581,7 @@ impl Device {
 //    /// must return 0.
 //    pub fn preferred_vector_width_short(&self) -> Result<u32> {
 //
-//        let _ = sh::CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT;
+//        let _ = foreign::CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT;
 //        
 //        unimplemented!()
 //    }
@@ -596,7 +594,7 @@ impl Device {
 //    /// must return 0.
 //    pub fn preferred_vector_width_int(&self) -> Result<u32> {
 //
-//        let _ = sh::CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT;
+//        let _ = foreign::CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT;
 //        
 //        unimplemented!()
 //    }
@@ -609,7 +607,7 @@ impl Device {
 //    /// must return 0.
 //    pub fn preferred_vector_width_long(&self) -> Result<u32> {
 //
-//        let _ = sh::CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG;
+//        let _ = foreign::CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG;
 //        
 //        unimplemented!()
 //    }
@@ -622,7 +620,7 @@ impl Device {
 //    /// must return 0.
 //    pub fn preferred_vector_width_float(&self) -> Result<u32> {
 //
-//        let _ = sh::CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT;
+//        let _ = foreign::CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT;
 //        
 //        unimplemented!()
 //    }
@@ -635,7 +633,7 @@ impl Device {
 //    /// must return 0.
 //    pub fn preferred_vector_width_double(&self) -> Result<u32> {
 //
-//        let _ = sh::CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE;
+//        let _ = foreign::CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE;
 //        
 //        unimplemented!()
 //    }
@@ -648,14 +646,14 @@ impl Device {
     ///
     /// EMBEDDED_PROFILE - if the device supports the OpenCL embedded profile.
     pub fn profile(&self) -> Result<String> {
-        let parameter = sh::CL_DEVICE_PROFILE;
+        let parameter = foreign::CL_DEVICE_PROFILE;
         let res = self.info(parameter, |size| vec![0u8; size], |b| b.as_mut_ptr() as _);
         res.map(|b| String::from_utf8(b).unwrap())
     }
 
     /// The smallest alignment in bytes which can be used for any data type.
     pub fn profiling_timer_resolution(&self) -> Result<usize> {
-        let parameter = sh::CL_DEVICE_PROFILING_TIMER_RESOLUTION;
+        let parameter = foreign::CL_DEVICE_PROFILING_TIMER_RESOLUTION;
         let res = self.info(parameter, |_| 0usize, |b| b as *mut usize as _)?;
         Ok(res)
     }
@@ -699,14 +697,14 @@ impl Device {
     /// of: CL_DEVICE_TYPE_CPU, CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_ACCELERATOR, 
     /// or CL_DEVICE_TYPE_DEFAULT.
     pub fn type_(&self) -> Result<u64> {
-        let parameter = sh::CL_DEVICE_TYPE;
+        let parameter = foreign::CL_DEVICE_TYPE;
         let res = self.info(parameter, |_| 0u64, |b| b as *mut u64 as _)?;
         Ok(res)
     }
 
     /// Vendor name string.
     pub fn vendor(&self) -> Result<String> {
-        let parameter = sh::CL_DEVICE_VENDOR;
+        let parameter = foreign::CL_DEVICE_VENDOR;
         let res = self.info(parameter, |size| vec![0u8; size], |b| b.as_mut_ptr() as _);
         res.map(|b| String::from_utf8(b).unwrap())
     }
@@ -714,7 +712,7 @@ impl Device {
     /// A unique device vendor identifier. An example of a unique device identifier could be 
     /// the PCIe ID.
     pub fn vendor_id(&self) -> Result<u32> {
-        let parameter = sh::CL_DEVICE_VENDOR_ID;
+        let parameter = foreign::CL_DEVICE_VENDOR_ID;
         let res = self.info(parameter, |_| 0u32, |b| b as *mut u32 as _)?;
         Ok(res)
     }
@@ -726,14 +724,14 @@ impl Device {
     ///
     /// The major_version.minor_version value returned will be 1.0.
     pub fn version(&self) -> Result<String> {
-        let parameter = sh::CL_DEVICE_VERSION;
+        let parameter = foreign::CL_DEVICE_VERSION;
         let res = self.info(parameter, |size| vec![0u8; size], |b| b.as_mut_ptr() as _);
         res.map(|b| String::from_utf8(b).unwrap())
     }
 
     /// OpenCL software driver version string in the form major_number.minor_number.
     pub fn driver_version(&self) -> Result<String> {
-        let parameter = sh::CL_DRIVER_VERSION;
+        let parameter = foreign::CL_DRIVER_VERSION;
         let res = self.info(parameter, |size| vec![0u8; size], |b| b.as_mut_ptr() as _);
         res.map(|b| String::from_utf8(b).unwrap())
     }
@@ -742,7 +740,7 @@ impl Device {
     fn info_size(&self, parameter: u32) -> Result<usize> {
         unsafe {
             let mut size = 0;
-            let ret_value = sh::clGetDeviceInfo(self.0, parameter, 0, ptr::null_mut(), &mut size);
+            let ret_value = foreign::clGetDeviceInfo(self.0, parameter, 0, ptr::null_mut(), &mut size);
 
             return utility::check(ret_value, || size);
         }
@@ -750,18 +748,20 @@ impl Device {
 
     fn info<F1, F2, T>(&self, p: u32, f1: F1, f2: F2) -> Result<T>
         where F1: Fn(usize) -> T, 
-              F2: Fn(&mut T) -> *mut raw::c_void {
+              F2: Fn(&mut T) -> *mut c_void {
         unsafe {
 
             let size = self.info_size(p)?;
             let mut ret = f1(size);
             
-            let ret_value = sh::clGetDeviceInfo(self.0, p, size, f2(&mut ret), ptr::null_mut());
+            let ret_value = foreign::clGetDeviceInfo(self.0, p, size, f2(&mut ret), ptr::null_mut());
 
             return utility::check(ret_value, || ret);
         }
     }
 }
+
+impl cmp::Eq for Device { }
 
 impl cmp::PartialEq<Device> for Device {
 
@@ -772,19 +772,19 @@ impl cmp::PartialEq<Device> for Device {
 }
 
 // TODO use newtype: https://github.com/rust-lang/rust/issues/32146
-pub type Event = sh::cl_event;
+pub type Event = foreign::cl_event;
 
 #[derive(Debug)]
-pub struct Kernel(sh::cl_kernel);
+pub struct Kernel(foreign::cl_kernel);
 
 pub trait KernelArg {
     fn size() -> usize;
-    fn pointer(&self) -> *mut raw::c_void;
+    fn pointer(&self) -> *mut c_void;
 }
 
 impl KernelArg for Buffer {
-    fn size() -> usize { mem::size_of::<sh::cl_mem>() }
-    fn pointer(&self) -> sh::cl_mem { self.0 }
+    fn size() -> usize { mem::size_of::<foreign::cl_mem>() }
+    fn pointer(&self) -> foreign::cl_mem { unsafe { mem::transmute(self) } }
 }
 
 impl Kernel {
@@ -824,7 +824,7 @@ impl Kernel {
         unsafe {
             let size = A::size();
             let ptr = buf.pointer();
-            let ret_value = sh::clSetKernelArg(self.0, position, size, ptr);
+            let ret_value = foreign::clSetKernelArg(self.0, position, size, ptr);
             return utility::check(ret_value, || {});
         }
     }
@@ -832,7 +832,7 @@ impl Kernel {
     /// Increment the kernel reference count.
     fn retain(&self) -> Result {
         unsafe {
-            let ret_value = sh::clRetainKernel(self.0);
+            let ret_value = foreign::clRetainKernel(self.0);
             return utility::check(ret_value, || {});
         }
     }
@@ -840,7 +840,7 @@ impl Kernel {
     /// Decrement the kernel reference count.
     fn release(&self) -> Result {
         unsafe {
-            let ret_value = sh::clReleaseKernel(self.0);
+            let ret_value = foreign::clReleaseKernel(self.0);
             return utility::check(ret_value, || {});
         }
     }
@@ -863,7 +863,7 @@ impl ops::Drop for Kernel {
 
 /// Newtype with an internal type of `cl_platform_id`.
 #[derive(Clone, Debug)]
-pub struct Platform(sh::cl_platform_id);
+pub struct Platform(foreign::cl_platform_id);
 
 impl Platform {
 
@@ -876,17 +876,17 @@ impl Platform {
     /// * `EMBEDDED_PROFILE` - if the implementation supports the OpenCL embedded profile. The 
     /// embedded profile is defined to be a subset for each version of OpenCL.
     pub fn profile(&self) -> Result<String> {
-        self.info(sh::CL_PLATFORM_PROFILE)
+        self.info(foreign::CL_PLATFORM_PROFILE)
     }
 
     /// Returns the platform name.
     pub fn name(&self) -> Result<String> {
-        self.info(sh::CL_PLATFORM_NAME)
+        self.info(foreign::CL_PLATFORM_NAME)
     }
 
     /// Returns the platform vendor.
     pub fn vendor(&self) -> Result<String> {
-        self.info(sh::CL_PLATFORM_VENDOR)
+        self.info(foreign::CL_PLATFORM_VENDOR)
     }
 
     /// Returns a space-separated list of extension names (the extension names themselves do 
@@ -898,13 +898,13 @@ impl Platform {
             st.split_whitespace().map(|s| s.into()).collect()
         };
 
-        self.info(sh::CL_PLATFORM_EXTENSIONS).map(closure)
+        self.info(foreign::CL_PLATFORM_EXTENSIONS).map(closure)
     }
 
     pub fn ndevices_by_type(&self, t: u64) -> Result<u32> {
         unsafe {
             let mut ndevices = 0;
-            let ret_value = sh::clGetDeviceIDs(self.0, t, 0, ptr::null_mut(), &mut ndevices);
+            let ret_value = foreign::clGetDeviceIDs(self.0, t, 0, ptr::null_mut(), &mut ndevices);
             return utility::check(ret_value, || ndevices);
         }
     }
@@ -912,23 +912,23 @@ impl Platform {
     pub fn devices_by_type(&self, t: u64) -> Result<Vec<Device>> {
         unsafe {
             let ndevices = self.ndevices_by_type(t)?;
-            let mut vec_id = vec![0 as sh::cl_device_id; ndevices as usize];
+            let mut vec_id = vec![0 as foreign::cl_device_id; ndevices as usize];
             let n = ptr::null_mut();
 
-            let ret_value = sh::clGetDeviceIDs(self.0, t, ndevices, vec_id.as_mut_ptr(), n);
+            let ret_value = foreign::clGetDeviceIDs(self.0, t, ndevices, vec_id.as_mut_ptr(), n);
             utility::check(ret_value, || vec_id.iter().map(|&id| Device(id)).collect())
         }
     }
 
     pub fn devices(&self) -> Result<Vec<Device>> {
-        self.devices_by_type(sh::CL_DEVICE_TYPE_ALL)
+        self.devices_by_type(foreign::CL_DEVICE_TYPE_ALL)
     }
 
     /// Returns the size of `parameter`.
     fn info_size(&self, parameter: u32) -> Result<usize> {
         unsafe {
             let mut size = 0;
-            let ret_value = sh::clGetPlatformInfo(self.0, parameter, 0, ptr::null_mut(), &mut size);
+            let ret_value = foreign::clGetPlatformInfo(self.0, parameter, 0, ptr::null_mut(), &mut size);
 
             return utility::check(ret_value, || size);
         }
@@ -938,11 +938,11 @@ impl Platform {
         unsafe {
             let size = self.info_size(parameter)?;
             let mut bytes = vec![0u8; size];
-            let ret_value = sh::clGetPlatformInfo(
+            let ret_value = foreign::clGetPlatformInfo(
                 self.0, 
                 parameter, 
                 size, 
-                bytes.as_mut_ptr() as *mut raw::c_void, 
+                bytes.as_mut_ptr() as *mut c_void, 
                 ptr::null_mut()
             );
 
@@ -952,7 +952,7 @@ impl Platform {
 }
 
 #[derive(Debug)]
-pub struct Program(sh::cl_program);
+pub struct Program(foreign::cl_program);
 
 impl Program {
 
@@ -968,7 +968,7 @@ impl Program {
     pub fn build<T>(&self, devices: &[Device], opt: T) -> Result where T: Into<Option<String>> {
         unsafe {
             let num_devices = devices.len() as u32;
-            let raw_devices: Vec<sh::cl_device_id> = devices.iter().map(|d| d.0).collect();
+            let raw_devices: Vec<foreign::cl_device_id> = devices.iter().map(|d| d.0).collect();
             let raw_devices_ptr = raw_devices.as_ptr();
 
             let options = match opt.into() {
@@ -980,7 +980,7 @@ impl Program {
             let pfn_notify = mem::transmute(ptr::null::<fn()>());
             let user_data = ptr::null_mut();
 
-            let ret_value = sh::clBuildProgram(
+            let ret_value = foreign::clBuildProgram(
                 self.0, 
                 num_devices, 
                 raw_devices_ptr,
@@ -999,8 +999,8 @@ impl Program {
             let mut errcode = 0i32;
             let cstring = ffi::CString::new(name.as_ref()).unwrap();
             let ptr = cstring.as_ptr();
-            let cl_kernel = sh::clCreateKernel(self.0, ptr, &mut errcode);
-            let ret_value = sh::CLStatus::new(errcode).expect("failed to convert i32 to CLStatus");
+            let cl_kernel = foreign::clCreateKernel(self.0, ptr, &mut errcode);
+            let ret_value = foreign::CLStatus::new(errcode).expect("failed to convert i32 to CLStatus");
 
             return utility::check(ret_value, || Kernel(cl_kernel));
         }
@@ -1009,7 +1009,7 @@ impl Program {
     /// Increment the context reference count.
     fn retain(&self) -> Result {
         unsafe {
-            let ret_value = sh::clRetainProgram(self.0);
+            let ret_value = foreign::clRetainProgram(self.0);
             return utility::check(ret_value, || {});
         }
     }
@@ -1017,7 +1017,7 @@ impl Program {
     /// Decrement the context reference count.
     fn release(&self) -> Result {
         unsafe {
-            let ret_value = sh::clReleaseProgram(self.0);
+            let ret_value = foreign::clReleaseProgram(self.0);
             return utility::check(ret_value, || {});
         }
     }
@@ -1039,7 +1039,7 @@ impl ops::Drop for Program {
 }
 
 #[derive(Debug)]
-pub struct Queue(sh::cl_command_queue);
+pub struct Queue(foreign::cl_command_queue);
 
 impl Queue {
 
@@ -1047,9 +1047,9 @@ impl Queue {
     pub fn new(context: &Context, device: &Device, properties: u64) -> Result<Self> {
         unsafe {
             let mut errcode_ret: i32 = 0;
-            let cl_command_queue = sh::clCreateCommandQueue(context.0, device.0, 
+            let cl_command_queue = foreign::clCreateCommandQueue(context.0, device.0, 
                 properties, &mut errcode_ret);
-            let ret_value = sh::CLStatus::new(errcode_ret).expect("failed to convert i32 to CLStatus");
+            let ret_value = foreign::CLStatus::new(errcode_ret).expect("failed to convert i32 to CLStatus");
 
             return utility::check(ret_value, || Queue(cl_command_queue));
         }
@@ -1099,7 +1099,7 @@ impl Queue {
         blocking_write:  bool, 
         offset:          usize,
         cb:              usize, 
-        ptr:             *const raw::c_void,
+        ptr:             *const c_void,
         event_wait_list: &[Event]) 
         -> Result<Event> {
 
@@ -1109,11 +1109,11 @@ impl Queue {
             let events = 
                 if num_events_in_wait_list > 0 { event_wait_list.as_ptr() } else { ptr::null() };
 
-            let mut new_event = 0 as sh::cl_event;
+            let mut new_event = 0 as foreign::cl_event;
 
             let blocking_write_u32 = if blocking_write { 1 } else { 0 };
 
-            let ret_value = sh::clEnqueueWriteBuffer(
+            let ret_value = foreign::clEnqueueWriteBuffer(
                 self.0, 
                 buffer.0, 
                 blocking_write_u32,
@@ -1160,7 +1160,7 @@ impl Queue {
         blocking_read:   bool,
         offset:          usize,
         cb:              usize,
-        ptr:             *mut raw::c_void,
+        ptr:             *mut c_void,
         event_wait_list: &[Event])
         -> Result<Event> {
 
@@ -1169,11 +1169,11 @@ impl Queue {
             let events = 
                 if num_events_in_wait_list > 0 { event_wait_list.as_ptr() } else { ptr::null() };
 
-            let mut new_event = 0 as sh::cl_event;
+            let mut new_event = 0 as foreign::cl_event;
 
             let blocking_read_u32 = if blocking_read { 1 } else { 0 };
 
-            let ret_value = sh::clEnqueueReadBuffer(
+            let ret_value = foreign::clEnqueueReadBuffer(
                 self.0, 
                 buffer.0, 
                 blocking_read_u32,
@@ -1256,7 +1256,7 @@ impl Queue {
             let events = 
                 if num_events_in_wait_list > 0 { event_wait_list.as_ptr() } else { ptr::null() };
 
-            let mut new_event = 0 as sh::cl_event;
+            let mut new_event = 0 as foreign::cl_event;
 
             // == ptrs
             let global_work_size_ptr = 
@@ -1265,7 +1265,7 @@ impl Queue {
             let local_work_size_ptr =
                 if local_work_size.len() > 0 { local_work_size.as_ptr() } else { ptr::null() };
 
-            let ret_value = sh::clEnqueueNDRangeKernel(
+            let ret_value = foreign::clEnqueueNDRangeKernel(
                 self.0,
                 kernel.0,
                 work_dim,
@@ -1284,7 +1284,7 @@ impl Queue {
     /// Increments the command_queue reference count.
     fn retain(&self) -> Result {
         unsafe {
-            let ret_value = sh::clRetainCommandQueue(self.0);
+            let ret_value = foreign::clRetainCommandQueue(self.0);
             return utility::check(ret_value, || {});
         }
     }
@@ -1292,7 +1292,7 @@ impl Queue {
     /// Decrements the command_queue reference count.
     fn release(&self) -> Result {
         unsafe {
-            let ret_value = sh::clReleaseCommandQueue(self.0);
+            let ret_value = foreign::clReleaseCommandQueue(self.0);
             return utility::check(ret_value, || {});
         }
     }
@@ -1305,6 +1305,16 @@ impl clone::Clone for Queue {
         self.retain().expect("unable to retain `Queue`");
 
         Queue(self.0)
+    }
+}
+
+impl cmp::Eq for Queue { }
+
+impl cmp::PartialEq<Queue> for Queue {
+
+    fn eq(&self, other: &Queue) -> bool {
+
+        self.0 == other.0
     }
 }
 

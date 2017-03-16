@@ -13,8 +13,8 @@ license = "MIT/Apache-2.0"
 enum_primitive = "0.1.1"
 lazy_static = "0.2.4"
 libloading = "0.3.2"
-log = "0.3.6"
+log = "0.3.7"
 ndarray = "0.8.0"
 
-[dev-dependencies]
-compiletest_rs = "0.2.5"
+# [dev-dependencies]
+# compiletest_rs = "0.2.5"

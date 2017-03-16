@@ -1,7 +1,7 @@
 //! Provides a simple, unified API for running highly parallel computations on different
 //! devices across different GPGPU frameworks, allowing you to swap your backend at runtime.
 //!
-//! Parenchyma is a hard fork of [Collenchyma], a now-defunct project started at [Autumn].
+//! Parenchyma began as a hard fork of [Collenchyma], a now-defunct project started at [Autumn].
 //!
 //! ## Abstract
 //!
@@ -30,10 +30,10 @@
 //!
 //! ## Architecture
 //!
-//! The single entry point of Parenchyma is the [Backend](./struct.Backend.html) type. A
+//! The single entry point of Parenchyma is a [Backend](./struct.Backend.html). A
 //! backend is agnostic over the device it runs operations on. In order to be agnostic over the 
-//! device, such as native host CPU, GPUs, accelerators or any other devices, the backend needs to be
-//! agnostic over the framework as well. The framework is important, as it provides the interface 
+//! device, such as native host CPU, GPUs, accelerators or any other devices, the backend needs to 
+//! be agnostic over the framework as well. The framework is important, as it provides the interface 
 //! to execute operations on devices, among other things. Since different vendors of hardware use 
 //! different frameworks, it becomes important that the backend is agnostic over the framework.
 //! This allows us to run computations on any machine without having to worry about hardware 
@@ -56,13 +56,13 @@
 //! a BLAS extension. Whether or not the dot operation is executed on one GPU, multiple GPUS or on 
 //! a CPU device depends solely on how you configured the backend.
 //!
-//! ### Bundles
+//! ### Packages
 //!
-//! The concept of Parenchyma extensions has one more component - the [Bundle](./trait.Bundle.html)
+//! The concept of Parenchyma extensions has one more component - the [Package](./trait.ExtensionPackage.html)
 //! trait. As opposed to executing code on the native CPU, other devices need to compile and build 
-//! the extension manually at runtime, which makes up a significant part of a framework. We need an
+//! the extension manually at runtime which makes up a significant part of a framework. We need an
 //! instance that's able to be initialized at runtime for holding the sate and compiled 
-//! operations - which is the bundle's main purpose.
+//! operations - which is the package's main purpose.
 //!
 //! ### Memory
 //!
@@ -74,6 +74,33 @@
 //! tracks and automatically manages data and its memory across devices, which is often the host and
 //! the device. Memory can also be passed around to different backends. Operations take tensors
 //! as arguments while handling the synchronization and allocation for you.
+//!
+//! ## Example
+//!
+//! ```ignore
+//! extern crate parenchyma as pa;
+//! extern crate parenchyma_nn as pann;
+//! 
+//! use pa::{Backend, Native, OpenCL, SharedTensor};
+//! 
+//! fn main() {
+//!     let ref native: Backend = Backend::new::<Native>()?;
+//!     // Initialize an OpenCL or CUDA backend packaged with the NN extension.
+//!     let ref backend = pann::Backend::new::<OpenCL>()?;
+//! 
+//!     // Initialize two `SharedTensor`s.
+//!     let shape = 1;
+//!     let ref x = SharedTensor::<f32>::with(backend, shape, vec![3.5])?;
+//!     let ref mut result = SharedTensor::<f32>::new(shape);
+//! 
+//!     // Run the sigmoid operation, provided by the NN extension, on 
+//!     // your OpenCL/CUDA enabled GPU (or CPU, which is possible through OpenCL)
+//!     backend.sigmoid(x, result)?;
+//! 
+//!     // Print the result: `[0.97068775] shape=[1], strides=[1]`
+//!     println!("{:?}", result.read(native)?.as_native()?);
+//! }
+//! ```
 //!
 //! ## Development
 //!
@@ -90,9 +117,9 @@
 //! [Collenchyma]: https://github.com/autumnai/collenchyma
 //! [Autumn]: https://github.com/autumnai
 
-#![allow(warnings)]
-// #![deny(missing_docs, unused_import_braces, unused_qualifications)]
-#![feature(associated_consts, field_init_shorthand, libc, type_ascription, untagged_unions)]
+#![deny(missing_docs, missing_debug_implementations, unused_import_braces, unused_qualifications)]
+#![feature(associated_consts, pub_restricted)]
+#![feature(libc, unsize, untagged_unions)]
 
 #[macro_use] extern crate enum_primitive;
 #[macro_use] extern crate lazy_static;
@@ -103,16 +130,27 @@ extern crate libloading as lib;
 extern crate ndarray;
 
 pub mod changelog;
-pub mod error;
-pub mod frameworks;
+pub mod utility;
+
+pub use self::frameworks::{native, opencl};
 
 pub use self::backend::Backend;
-pub use self::interface::{Address, ComputeDevice, Context, Framework, Hardware, HardwareKind};
+pub use self::context::Context;
+pub use self::error::{Error, ErrorKind, Result};
+pub use self::extension::{Build, ExtensionPackage, Unextended};
+pub use self::framework::{BoxContext, Framework};
+pub use self::frameworks::native::Native;
+pub use self::frameworks::opencl::OpenCL;
+pub use self::hardware::{Alloc, ComputeDevice, Device, Hardware, HardwareKind, Synch, Viewable};
 pub use self::memory::Memory;
-pub use self::tensor::{Shape, SharedTensor, Tensor, TensorMut, u64Map};
+pub use self::tensor::{Shape, SharedTensor};
 
 mod backend;
-mod interface;
+mod context;
+mod error;
+mod extension;
+mod framework;
+mod frameworks;
+mod hardware;
 mod memory;
 mod tensor;
-mod utility;

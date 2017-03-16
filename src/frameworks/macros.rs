@@ -21,7 +21,7 @@ macro_rules! dynamic_extern {
                 type FnPtr = unsafe extern $linkage fn($($argument_type),*) $(-> $ret_ty)*;
 
                 lazy_static! {
-                    static ref FN_PTR: ::frameworks::loader::Sym<FnPtr> = {
+                    static ref FN_PTR: ::frameworks::macros::Sym<FnPtr> = {
                         unsafe {
                             use lib::Library;
                             use std::path::Path;

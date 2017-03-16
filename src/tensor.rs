@@ -1,16 +1,20 @@
-use std::{convert, mem};
+use std::mem;
 use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
 
-use super::{Address, Backend, Memory};
-use super::utility;
-use super::error::{ErrorKind, Result};
+use {Alloc, ComputeDevice, Device, ErrorKind, Memory, Result, Synch};
+use utility::Has;
 
 /// A shared tensor for framework-agnostic, memory-aware, n-dimensional storage. 
 ///
 /// A `SharedTensor` is used for the purpose of tracking the location of memory across devices 
 /// for one similar piece of data. `SharedTensor` handles synchronization of memory of type `T`, by 
 /// which it is parameterized, and provides the functionality for memory management across devices.
+///
+/// `SharedTensor` holds copies and their version numbers. A user can request any number of
+/// immutable `Tensor`s or a single mutable `Tensor` (enforced by borrowck). It's possible to 
+/// validate at runtime that tensor data is initialized when a user requests a tensor for reading
+/// and skip the initialization check if a tensor is requested only for writing.
 ///
 /// ## Terminology
 ///
@@ -56,11 +60,13 @@ use super::error::{ErrorKind, Result};
 /// TODO
 /// ```
 #[derive(Debug)]
-pub struct SharedTensor<T> {
+pub struct SharedTensor<T = f32> {
     /// The shape of the shared tensor.
     pub shape: Shape,
+
     /// A vector of buffers.
-    copies: RefCell<Vec<(Address, Memory<T>)>>,
+    copies: RefCell<Vec<(ComputeDevice, Memory<T>)>>,
+
     /// Indicates whether or not memory is synchronized (synchronization state).
     ///
     /// There are only two possible states:
@@ -86,90 +92,168 @@ pub struct SharedTensor<T> {
     /// corresponding memory is _ticked_ or increased. The value `0` means that the memory object 
     /// at that specific location is uninitialized or outdated.
     versions: u64Map,
+
     /// A marker for `T`.
     phantom: PhantomData<T>,
 }
 
-impl<T> SharedTensor<T> /* TODO where T: Scalar | Float */ {
+impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
 
     /// Constructs a new `SharedTensor` with a shape of `sh`.
-    pub fn new<I>(sh: I) -> Result<Self> where I: Into<Shape> {
+    pub fn new<A>(sh: A) -> Self where A: Into<Shape> {
 
         let shape = sh.into();
         let copies = RefCell::new(vec![]);
         let versions = u64Map::new();
 
-        Ok(SharedTensor { shape, copies, versions, phantom: PhantomData })
+        SharedTensor { shape, copies, versions, phantom: PhantomData }
     }
 
-    /// Constructs a new `SharedTensor` from the supplied `chunk` of data with a shape of `sh`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # #![allow(dead_code)]
-    ///
-    /// let framework = Native::new();
-    /// let ref backend = Backend::with(framework)?;
-    ///
-    /// let shared: SharedTensor<f32> = SharedTensor::with(backend, [2, 2], [1., 2., 3., 4.])?;
-    /// ```
-    pub fn with<I, A>(backend: &Backend, sh: I, mut chunk: A) -> Result<Self> 
-        where I: Into<Shape>, 
-              A: AsMut<[T]> {
+    /// Constructs a new `SharedTensor` containing a `chunk` of data with a shape of `sh`.
+    pub fn with<H, I>(con: &H, sh: I, chunk: Vec<T>) -> Result<Self>
+        where H: Has<Device>,
+              I: Into<Shape>,
+              {
 
         let shape = sh.into();
-        let mut slice = chunk.as_mut();
-        let buffer = backend.compute_device::<T>().allocate_with(&shape, &mut slice)?;
-        let vec = vec![(backend.compute_device::<T>().addr(), buffer)];
-        let copies = RefCell::new(vec);
+        let device = con.get_ref();
+        let buffer = device.allocwrite(&shape, chunk)?;
+        let copies = RefCell::new(vec![(device.view(), buffer)]);
         let versions = u64Map::with(1);
 
         Ok(SharedTensor { shape, copies, versions, phantom: PhantomData })
     }
 
-    /// Pre-allocate memory on the active device and track it.
-    pub fn allocate(&mut self, backend: &Backend) -> Result {
+    /// Allocates memory on the active device and tracks it.
+    pub fn alloc<H, I>(con: &H, sh: I) -> Result<Self> 
+        where H: Has<Device>, 
+              I: Into<Shape> 
+              {
 
-        let buffer = backend.compute_device::<T>().allocate(&self.shape)?;
+        let shape = sh.into();
+        let device = con.get_ref();
+        let buffer = device.alloc(&shape)?;
+        let copies = RefCell::new(vec![(device.view(), buffer)]);
+        let versions = u64Map::with(1); // ? TODO
 
-        unimplemented!()
+        Ok(SharedTensor { shape, copies, versions, phantom: PhantomData })
+    }
+
+    /// Drops memory allocation on the specified device. Returns error if no memory has been 
+    /// allocated on this device.
+    ///
+    // TODO FIXME: synchronize memory elsewhere if possible..?
+    // TODO silence the error..?
+    pub fn dealloc<H>(&mut self, con: &H) -> Result<Memory<T>> where H: Has<Device> {
+
+        let device = con.get_ref();
+        let location = device.view();
+
+        match self.get_location_index(&location) {
+            Some(i) => {
+                let (_, memory) = self.copies.borrow_mut().remove(i);
+
+                let version = self.versions.get();
+                let mask = (1 << i) - 1;
+                let lower = version & mask;
+                let upper = (version >> 1) & (!mask);
+                self.versions.set(lower | upper);
+
+                Ok(memory)
+            },
+
+            _ => Err(ErrorKind::AllocatedMemoryNotFoundForDevice.into())
+        }
+    }
+
+    // /// Changes the capacity and shape of the tensor.
+    // ///
+    // /// **Caution**: Drops all copies which are not on the current device.
+    // ///
+    // /// `SharedTensor::reshape` is preferred over this method if the size of the old and new shape
+    // /// are identical because it will not reallocate memory.
+    // pub fn realloc<H, I>(&mut self, dev: &H, sh: I) -> Result 
+    //     where H: Has<Device>, 
+    //           I: Into<Shape> 
+    //           {
+
+    //     unimplemented!()
+    // }
+
+    /// Change the shape of the Tensor.
+    ///
+    /// # Returns
+    ///
+    /// Returns an error if the size of the new shape is not equal to the size of the old shape.
+    /// If you want to change the shape to one of a different size, use `SharedTensor::realloc`.
+    pub fn reshape<I>(&mut self, sh: I) -> Result where I: Into<Shape> {
+        let shape = sh.into();
+
+        if shape.capacity() != self.shape.capacity() {
+            return Err(ErrorKind::InvalidReshapedTensorSize.into());
+        }
+
+        self.shape = shape;
+
+        Ok(())
+    }
+
+    /// Returns the number of elements the tensor can hold without reallocating.
+    pub fn capacity(&self) -> usize {
+        self.shape.capacity()
     }
 }
 
-/// An `impl` block containing the read/write/auto-sync logic.
-impl<T> SharedTensor<T> {
+/// This block contains the read/write/auto-sync logic.
+impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
 
     /// View an underlying tensor for reading on the active device.
     ///
     /// This method can fail if memory allocation fails or if no memory is initialized.
     /// The borrowck guarantees that the shared tensor outlives all of its tensors.
-    pub fn view<'shared>(&'shared self, backend: &Backend) -> Result<Tensor<'shared, T>> {
-        if self.versions.empty() {
-            return Err(ErrorKind::UninitializedMemory.into());
-        }
+    ///
+    /// Summary:
+    ///
+    /// 1) Check if there is initialized data anywhere
+    /// 2) Lookup memory and its version for `device`, allocate it if it doesn't exist
+    /// 3) Check version, if it's old, synchronize
+    pub fn read<'shared, H>(&'shared self, dev: &H) -> Result<&'shared Memory<T>> 
+        where H: Has<Device> {
 
-        let i = self.get_or_create_location_index(backend)?;
-        self.sync_if_necessary(backend, i)?;
-        self.versions.insert(i);
+        let i = self.autosync(dev, false)?;
 
         let borrowed_copies = self.copies.borrow();
 
-        let (ref address, ref buffer) = borrowed_copies[i];
+        let (_, ref buffer) = borrowed_copies[i];
 
-        let address = unsafe { utility::extend_lifetime::<'shared>(address) };
-        let memory = unsafe { utility::extend_lifetime::<'shared>(buffer) };
+        let memory = unsafe { extend_lifetime::<'shared>(buffer) };
 
-        Ok(Tensor { address, memory })
+        Ok(memory)
     }
 
     /// View an underlying tensor for reading and writing on the active device. The memory 
     /// location is set as the latest.
     ///
     /// This method can fail is memory allocation fails or if no memory is initialized.
-    pub fn view_mut<'buf>(&'buf mut self, backend: &Backend) -> Result<TensorMut<'buf, T>> {
+    ///
+    /// Summary:
+    ///
+    /// 1) Check if there is initialized data anywhere
+    /// 2) Lookup memory and its version for `device`, allocate it if it doesn't exist
+    /// 3) Check version, if it's old, synchronize
+    /// 4) Increase memory version and latest_version
+    pub fn read_write<'shared, H>(&'shared mut self, dev: &H) -> Result<&'shared mut Memory<T>> 
+        where H: Has<Device> {
 
-        unimplemented!()
+        let i = self.autosync(dev, true)?;
+
+        let mut borrowed_copies = self.copies.borrow_mut();
+
+        let (_, ref mut buffer) = borrowed_copies[i];
+
+        let memory = unsafe { extend_lifetime_mut::<'shared>(buffer) };
+
+        Ok(memory)
     }
 
     /// View an underlying tensor for writing only.
@@ -178,21 +262,41 @@ impl<T> SharedTensor<T> {
     /// be overwritten anyway. The caller must initialize all elements contained in the tensor. This
     /// convention isn't enforced, but failure to do so may result in undefined data later.
     ///
+    /// Summary:
+    ///
+    /// 1) *Skip initialization check
+    /// 2) Lookup memory and its version for `device`, allocate it if it doesn't exist
+    /// 3) *Skip synchronization
+    /// 4) Increase memory version and latest_version
+    ///
     /// TODO
     ///
     /// * Add an `invalidate` method:
     ///
     ///     If the caller fails to overwrite memory, it must call `invalidate` to return the vector
     ///     to an uninitialized state.
-    pub fn write<'buf>(&'buf mut self, backend: &Backend) -> Result<TensorMut<'buf, T>> {
+    pub fn write<'shared, H>(&'shared mut self, con: &H) -> Result<&'shared mut Memory<T>>
+        where H: Has<Device> {
 
-        unimplemented!()
+        let i = self.get_or_create_location_index(con)?;
+        self.versions.set(1 << i);
+
+        let mut borrowed_copies = self.copies.borrow_mut();
+
+        let (_, ref mut buffer) = borrowed_copies[i];
+
+        let memory = unsafe { extend_lifetime_mut::<'shared>(buffer) };
+
+        Ok(memory)
     }
+}
 
-    fn get_location_index(&self, address: &Address) -> Option<usize> {
+impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
+
+    fn get_location_index(&self, location: &ComputeDevice) -> Option<usize> {
 
         for (i, l) in self.copies.borrow().iter().map(|&(ref l, _)| l).enumerate() {
-            if l.eq(address) {
+            if l.eq(location) {
                 return Some(i);
             }
         }
@@ -200,11 +304,13 @@ impl<T> SharedTensor<T> {
         None
     }
 
-    fn get_or_create_location_index(&self, backend: &Backend) -> Result<usize> {
+    fn get_or_create_location_index<H>(&self, con: &H) -> Result<usize> where H: Has<Device> {
 
-        let address = backend.compute_device::<T>().addr();
+        let device = con.get_ref();
 
-        if let Some(i) = self.get_location_index(&address) {
+        let location = device.view();
+
+        if let Some(i) = self.get_location_index(&location) {
             return Ok(i);
         }
 
@@ -212,21 +318,40 @@ impl<T> SharedTensor<T> {
             return Err(ErrorKind::BitMapCapacityExceeded.into());
         }
 
-        let memory = backend.compute_device::<T>().allocate(&self.shape)?;
-        self.copies.borrow_mut().push((address, memory));
+        let memory = device.alloc(&self.shape)?;
+        self.copies.borrow_mut().push((location, memory));
 
         Ok(self.copies.borrow().len() - 1)
     }
 
-    // TODO: 
-    //
-    // * Choose the best source to copy data from.
-    //      That would require some additional traits that return costs for transferring data 
-    //      between different backends.
-    //
-    // Actually I think that there would be only transfers between `Native` <-> `Cuda` 
-    // and `Native` <-> `OpenCL` in foreseeable future, so it's best to not over-engineer here.
-    fn sync_if_necessary(&self, backend: &Backend, destination_index: usize) -> Result {
+    /// Sync if necessary
+    ///
+    /// TODO: 
+    ///
+    /// * Choose the best source to copy data from.
+    ///      That would require some additional traits that return costs for transferring data 
+    ///      between different backends.
+    ///
+    /// note: Typically, there would be transfers between `Native` <-> `GPU` in foreseeable 
+    /// future, so it's best to not over-engineer here.
+    pub fn autosync<H>(&self, dev: &H, tick: bool) -> Result<usize> where H: Has<Device> {
+        if self.versions.empty() {
+            return Err(ErrorKind::UninitializedMemory.into());
+        }
+
+        let i = self.get_or_create_location_index(dev)?;
+        self.autosync_(i)?;
+
+        if tick {
+            self.versions.set(1 << i);
+        } else {
+            self.versions.insert(i);
+        }
+
+        Ok(i)
+    }
+
+    fn autosync_(&self, destination_index: usize) -> Result {
 
         if self.versions.contains(destination_index) {
 
@@ -246,25 +371,24 @@ impl<T> SharedTensor<T> {
         let (source, mut destination) = {
             if source_index < destination_index {
                 let (left, right) = borrowed_copies.split_at_mut(destination_index);
-                (&mut left[source_index], &mut right[0])
+                (&left[source_index], &mut right[0])
             } else {
                 let (left, right) = borrowed_copies.split_at_mut(source_index);
-                (&mut right[0], &mut left[destination_index])
+                (&right[0], &mut left[destination_index])
             }
         };
 
-        backend.compute_device().sync_out(&source.1, &mut destination.1)
+        // TODO refactor
 
-        // TODO:
-        //
         // Backends may define transfers asymmetrically. E.g. CUDA may know how to transfer to and 
         // from Native backend, while Native may know nothing about CUDA at all. So if first 
         // attempt fails we change order and try again.
+        match source.0.device().read(&source.1, &mut destination.0, &mut destination.1) {
+            Err(ref e) if e.kind() == ErrorKind::NoAvailableSynchronizationRouteFound => { },
+            ret @ _ => return ret,
+        }
 
-
-        // dst_loc.mem_transfer.sync_in(
-        //      dst_loc.mem.as_mut(), src_loc.compute_device.deref(),
-        //      src_loc.mem.deref()).map_err(|e| e.into())
+        destination.0.device().write(&mut destination.1, &source.0, &source.1)
 
         // TODO: try transfer indirectly via Native backend
     }
@@ -277,27 +401,43 @@ pub struct Shape {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```{.text}
     /// // The following tensor has 9 components
     ///
     /// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     /// ```
-    capacity: usize,
+    pub capacity: usize,
     /// The total number of indices.
     ///
     /// # Example
     ///
     /// The following tensor has a rank of 2:
     ///
-    /// ```ignore
+    /// ```{.text}
     /// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     /// ```
     rank: usize,
     /// The dimensions of the tensor.
-    dims: Vec<usize>,
+    pub dims: Vec<usize>,
 }
 
-impl convert::From<[usize; 1]> for Shape {
+impl Shape {
+
+    /// Returns the capacity
+    pub fn capacity(&self) -> usize {
+
+        self.capacity
+    }
+}
+
+impl From<usize> for Shape {
+
+    fn from(n: usize) -> Shape {
+        [n].into()
+    }
+}
+
+impl From<[usize; 1]> for Shape {
 
     fn from(array: [usize; 1]) -> Shape {
         let capacity = array[0];
@@ -308,7 +448,7 @@ impl convert::From<[usize; 1]> for Shape {
     }
 }
 
-impl convert::From<[usize; 2]> for Shape {
+impl From<[usize; 2]> for Shape {
 
     fn from(array: [usize; 2]) -> Shape {
         let capacity = array.iter().fold(1, |acc, &dims| acc * dims);
@@ -319,20 +459,15 @@ impl convert::From<[usize; 2]> for Shape {
     }
 }
 
-/// An immutable view.
-///
-/// TODO:
-///
-/// Parameterization over mutability would help here..
-pub struct Tensor<'a, T: 'a> {
-    address: &'a Address,
-    memory: &'a Memory<T>,
-}
+impl From<[usize; 3]> for Shape {
 
-/// A mutable view.
-pub struct TensorMut<'a, T: 'a> {
-    address: &'a Address,
-    memory: &'a mut Memory<T>,
+    fn from(array: [usize; 3]) -> Shape {
+        let capacity = array.iter().fold(1, |acc, &dims| acc * dims);
+        let rank = 3;
+        let dims = array.to_vec();
+
+        Shape { capacity, rank, dims }
+    }
 }
 
 /// A "newtype" with an internal type of `Cell<u64>`. `u64Map` uses [bit manipulation][1] to manage 
@@ -361,6 +496,10 @@ impl u64Map {
         self.0.get()
     }
 
+    fn set(&self, v: u64) {
+        self.0.set(v)
+    }
+
     fn empty(&self) -> bool {
         self.0.get() == 0
     }
@@ -378,14 +517,10 @@ impl u64Map {
     }
 }
 
-mod tests {
-    use super::u64Map;
+unsafe fn extend_lifetime<'a, 'b, T>(t: &'a T) -> &'b T {
+    mem::transmute::<&'a T, &'b T>(t)
+}
 
-    #[test]
-    fn u64_map_contains() {
-        let key = 10;
-        let u64_map = u64Map::new();
-        u64_map.insert(key);
-        assert!(u64_map.contains(key))
-    }
+unsafe fn extend_lifetime_mut<'a, 'b, T>(t: &'a mut T) -> &'b mut T {
+    mem::transmute::<&'a mut T, &'b mut T>(t)
 }

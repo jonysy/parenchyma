@@ -1,5 +1,4 @@
-#[macro_use] mod loader;
+#[macro_use] mod macros;
 
-pub mod cuda;
 pub mod native;
 pub mod opencl;

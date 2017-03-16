@@ -1,14 +1,17 @@
-use frameworks::opencl::sh::CLStatus;
 use std::{error, fmt, result};
+use super::super::foreign::CLStatus;
 
+/// A specialized `Result` type.
 pub type Result<T = ()> = result::Result<T, Error>;
 
+/// The error type used in the OpenCL module.
 #[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
     inner: Option<Box<error::Error + Send + Sync>>,
 }
 
+/// A list of general categories.
 #[derive(Debug, Copy, Clone)]
 pub enum ErrorKind {
     /// No OpenCL devices that matched device_type were found.
@@ -69,7 +72,7 @@ pub enum ErrorKind {
 impl From<CLStatus> for ErrorKind {
 
     fn from(cl_status: CLStatus) -> ErrorKind {
-        use frameworks::opencl::sh::CLStatus::*;
+        use super::super::foreign::CLStatus::*;
         use self::ErrorKind::*;
 
         match cl_status {
@@ -160,15 +163,6 @@ impl Error {
         Error {
             kind: kind,
             inner: inner
-        }
-    }
-
-    pub fn get_ref(&self) -> Option<&(error::Error + Send + Sync + 'static)> {
-        use std::ops::Deref;
-
-        match self.inner {
-            Some(ref error) => Some(error.deref()),
-            _ => None
         }
     }
 

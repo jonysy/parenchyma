@@ -1,5 +1,7 @@
-use super::{Context, ComputeDevice, Framework};
-use super::error::Result;
+use std::ops;
+use super::{BoxContext, Context, Device, Error, ExtensionPackage, Framework, Hardware, Unextended};
+use super::Result;
+use utility::{self, TryDefault};
 
 /// The heart of Parenchyma - provides an interface for running parallel computations on one or 
 /// more devices.
@@ -15,76 +17,70 @@ use super::error::Result;
 /// the framework to the [`Backend::new`](#method.new) associated function, or by simply 
 /// calling [`Backend::default`](#method.default). The framework determines which devices are 
 /// available and how parallel kernel functions can be executed.
-///
-/// ## Examples
-///
-/// ```rust
-/// use parenchyma::{Backend, Framework, Native};
-///
-/// 
-/// // Construct a new framework.
-/// let framework = Native::new().expect("failed to initialize framework");
-///
-/// // Available devices can be obtained through the framework.
-/// let selection = framework.available_devices.clone();
-///
-/// // Create a ready to go backend from the framework.
-/// let backend = Backend::new(framework, selection).expect("failed to construct backend");
-///
-/// // ..
-/// ```
-///
-/// Construct a default backend:
-///
-/// ```rust
-/// use parenchyma::{Backend, Native};
-///
-/// // A default native backend.
-/// let backend: Backend<Native> = Backend::default().expect("something went wrong!");
-///
-/// // ..
-/// ```
 #[derive(Debug)]
-pub struct Backend {
+pub struct Backend<X = Unextended> {
     /// The initialized framework.
-    pub framework: Box<Framework>, /* &'static str,*/
+    ///
+    /// The Framework implementation such as OpenCL, CUDA, etc. defines, which should be used and
+    /// determines which hardwares will be available and how parallel kernel functions can be
+    /// executed.
+    framework: Box<Framework>,
     /// The context associated with the `framework`.
     ///
-    /// Contexts are the heart of both OpenCL and CUDA applications. See the [`Context`] trait for
-    /// more information.
+    /// Contexts are the heart of both OpenCL and CUDA applications. Contexts are created from one 
+    /// or more devices that are capable of executing methods and synchronizing memory. See 
+    /// the [`Context`] trait for more information.
     ///
     /// [`Context`]: (./trait.Context.html)
-    pub context: Box<Context>,
-    /// The chosen device
+    context: Box<Context<Package = X>>,
+}
+
+impl<X> Backend<X> where X: ExtensionPackage {
+
+    /// Initialize a new backend.
+    pub fn new<F>() -> Result<Self> where F: BoxContext<X> + Framework + TryDefault<Err = Error> {
+
+        let framework = Box::new(F::try_default()?);
+        let selection = framework.available_hardware();
+        let context = framework.enclose(selection)?;
+
+        Ok(Backend { framework: framework, context })
+    }
+
+    /// Constructs a backend from the specified `framework` and `selection`.
+    pub fn with<F>(fwrk: F, selection: Vec<Hardware>) -> Result<Self> 
+        where F: BoxContext<X> + Framework {
+
+        let framework = Box::new(fwrk);
+        let context = framework.enclose(selection)?;
+
+        Ok(Backend { framework, context })
+    }
+
+    /// Set the device at the specified `index` as the active device.
     ///
-    /// The default active device is the first device found (index = `0`).
-    active: usize,
-}
+    /// Only one device can be the _active_ device - the device in which operations are executed.
+    pub fn set_active(&mut self, index: usize) -> Result {
 
-impl Backend {
-
-    /// Constructs a backend using the most potent framework given the underlying hardware.
-    pub fn new() -> Backend {
-
-        unimplemented!()
-    }
-
-    /// Attempts to construct a backend from the specified `framework`.
-    pub fn with<F>(framework: F) -> Result<Backend> where F: Framework {
-
-        unimplemented!()
-    }
-
-    // /// Try all provided `frameworks` in the specified order, choosing the first framework that 
-    // // initializes without failure.
-    // pub fn try(frameworks: Vec<Box<Framework>>) -> Result<Backend>;
-}
-
-impl Backend {
-
-    /// Returns the current device.
-    pub fn compute_device<T>(&self) -> &ComputeDevice<T> {
-
-        unimplemented!()
+        self.context.set_active(index)
     }
 }
+
+impl<X> ops::Deref for Backend<X> where X: ExtensionPackage {
+
+    type Target = X::Extension;
+
+    fn deref<'a>(&'a self) -> &'a X::Extension {
+
+        self.context.extension()
+    }
+}
+
+impl<X> utility::Has<Device> for Backend<X> where X: ExtensionPackage {
+
+    fn get_ref(&self) -> &Device {
+        self.context.active_device()
+    }
+}
+
+// pub trait AsBackend { }

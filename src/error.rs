@@ -3,7 +3,7 @@
 use std::{error, fmt, result};
 
 /// A specialized `Result` type.
-pub type Result<T = ()> = result::Result<T, Error>;
+pub type Result<T = (), E = Error> = result::Result<T, E>;
 
 /// The core error type used in Parenchyma.
 #[derive(Debug)]
@@ -28,7 +28,7 @@ pub enum ErrorKind {
     InvalidReshapedTensorSize,
     /// An error returned when attempting to access uninitialized memory.
     UninitializedMemory,
-    /// Memory allocation was not found for a provided `Device`.
+    /// Unable to drop the provided device because a memory allocation was not found for it.
     AllocatedMemoryNotFoundForDevice,
     /// An error occurred while attempting to synchronize memory.
     MemorySynchronizationFailed,

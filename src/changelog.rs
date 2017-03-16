@@ -6,7 +6,10 @@
 /// * Partially implemented a CUDA API wrapper
 /// * Partially implemented native support
 /// * Worked on a fallback mechanism (see issue#15)
-/// * Chose a tensor lib (ndarray)
+/// * Use a tensor lib (ndarray) as the underlying native memory representation
 /// * No longer requires framework related feature flags (from the original Collenchyma project)
 /// * Implemented auto-sync
+/// * Add `Bundle` logic
+/// * Removed `IBinary`/`HashMap` technique. Use structs instead
+/// * No longer requires backends parameterized by a framework
 pub mod r0_0_3 {}

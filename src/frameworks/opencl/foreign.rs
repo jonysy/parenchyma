@@ -66,12 +66,14 @@ pub type cl_event_info                  = cl_uint;
 pub type cl_command_type                = cl_uint;
 pub type cl_profiling_info              = cl_uint;
 
+#[derive(Debug)]
 #[repr(C)]
 pub struct cl_image_format {
     image_channel_order:        cl_channel_order,
     image_channel_data_type:    cl_channel_type
 }
 
+#[derive(Debug)]
 pub struct cl_buffer_region {
     origin:     libc::size_t,
     size:       libc::size_t
@@ -445,8 +447,17 @@ pub static CL_PROFILING_COMMAND_SUBMIT:                  cl_uint = 0x1281;
 pub static CL_PROFILING_COMMAND_START:                   cl_uint = 0x1282;
 pub static CL_PROFILING_COMMAND_END:                     cl_uint = 0x1283;
 
-dynamic_extern! {
-    #[link="OpenCL"]
+// dynamic_extern! {
+//     #[link="OpenCL"]
+
+#[link(name = "OpenCL", kind = "framework")]
+#[cfg(target_os = "macos")]
+extern { }
+
+#[link(name = "OpenCL")]
+#[cfg(target_os = "linux")]
+extern { }
+
     extern "C" {
         
       /* Platform APIs */
@@ -844,4 +855,4 @@ dynamic_extern! {
        */
       pub fn clGetExtensionFunctionAddress(func_name: *const libc::c_char) -> *mut raw::c_void;
     }
-}
+//}

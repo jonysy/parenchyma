@@ -1,3 +1,6 @@
+mod error;
+mod utility;
+
 use std::{cmp, ffi, ops};
 
 use super::Result;
