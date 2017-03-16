@@ -64,7 +64,9 @@ impl OpenCLContext<Uninitialized> {
     }
 }
 
-impl<X> Context for OpenCLContext<X> where X: ExtensionPackage, Self: Unsize<X::Extension> {
+impl<X> Context for OpenCLContext<X> 
+    where X: ExtensionPackage, 
+          OpenCLContext<X>: Unsize<X::Extension> {
 
     type Package = X;
 

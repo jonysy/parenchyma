@@ -6,7 +6,9 @@ use super::NativeDevice;
 #[derive(Clone, Debug)]
 pub struct NativeContext<X>(pub PhantomData<X>);
 
-impl<X> Context for NativeContext<X> where X: ExtensionPackage, Self: Unsize<X::Extension> {
+impl<X> Context for NativeContext<X> 
+    where X: ExtensionPackage, 
+          NativeContext<X>: Unsize<X::Extension> {
 
     type Package = X;
 
