@@ -16,8 +16,16 @@ pub trait Framework: 'static + Debug {
     /// [issue#29924](https://github.com/rust-lang/rust/issues/29924): remove `Framework::name`
     const FRAMEWORK_NAME: &'static str;
 
+    /// Returns all _activatable_ hardware.
+    fn selection(&self) -> &[Hardware];
+
     /// Returns the cached and available hardware.
     fn available_hardware(&self) -> Vec<Hardware>;
+
+    #[doc(hidden)]
+    fn name(&self) -> &'static str {
+        Self::FRAMEWORK_NAME
+    }
 }
 
 /// Initialize a context, box it, and then return it.
@@ -27,6 +35,6 @@ pub trait BoxContext<ExtensionPackage>: Framework {
     // type Context: TryFrom<ContextConfig<Self>, Err = Error>;
 
     /// Create a context from a selection of hardware devices and then wrap it in a box.
-    fn enclose(&self, selection: Vec<Hardware>) 
+    fn enclose(&mut self, selection: Vec<Hardware>) 
         -> Result<Box<Context<Package = ExtensionPackage>>>;
 }

@@ -39,6 +39,7 @@ const OPEN_CL: &'static str = "OpenCL";
 pub struct OpenCL {
     /// raw device pointers
     cache: Vec<high::Device>,
+    selection: Vec<Hardware>,
     /// A list of available devices for the first platform found.
     ///
     /// Platforms are defined by the implementation. Platforms enables the host to interact with 
@@ -46,10 +47,22 @@ pub struct OpenCL {
     pub available_hardware: Vec<Hardware>,
 }
 
+impl OpenCL {
+
+    /// Initialize OpenCL
+    pub fn new() -> Result<OpenCL> {
+        OpenCL::try_default()
+    }
+}
+
 impl Framework for OpenCL {
 
     const FRAMEWORK_NAME: &'static str = OPEN_CL;
 
+    fn selection(&self) -> &[Hardware] {
+        &self.selection
+    }
+    
     fn available_hardware(&self) -> Vec<Hardware> {
         self.available_hardware.clone()
     }
@@ -60,7 +73,9 @@ impl<X> BoxContext<X> for OpenCL
           OpenCLContext<X>: Unsize<X::Extension> 
           {
 
-    fn enclose(&self, hw_selection: Vec<Hardware>) -> Result<Box<Context<Package = X>>> {
+    fn enclose(&mut self, hw_selection: Vec<Hardware>) -> Result<Box<Context<Package = X>>> {
+        self.selection = hw_selection.clone();
+
         let indices: Vec<usize> = hw_selection.iter().map(|hardware| hardware.id).collect();
 
         let devices: Vec<high::Device> = self.cache
@@ -122,8 +137,8 @@ impl TryDefault for OpenCL {
                         id: index,
                         framework: OPEN_CL,
                         kind: match dev_handle.type_().unwrap() {
-                            foreign::CL_DEVICE_TYPE_CPU => HardwareKind::Central,
-                            foreign::CL_DEVICE_TYPE_GPU => HardwareKind::Graphics,
+                            foreign::CL_DEVICE_TYPE_CPU => HardwareKind::CPU,
+                            foreign::CL_DEVICE_TYPE_GPU => HardwareKind::GPU,
                             foreign::CL_DEVICE_TYPE_ACCELERATOR => HardwareKind::Accelerator,
                             _ => HardwareKind::Other,
                         },
@@ -138,7 +153,7 @@ impl TryDefault for OpenCL {
                 .collect()
         };
 
-        Ok(OpenCL { cache, available_hardware })
+        Ok(OpenCL { cache, selection: vec![], available_hardware })
     }
 }
 

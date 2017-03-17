@@ -1,6 +1,7 @@
 use std::ops;
-use super::{BoxContext, Context, Device, Error, ExtensionPackage, Framework, Hardware, Unextended};
-use super::Result;
+use std::marker::PhantomData;
+use super::{BoxContext, Context, Device, ExtensionPackage, Framework, Hardware, HardwareKind, Unextended};
+use super::{Error, ErrorKind, Result};
 use utility::{self, TryDefault};
 
 /// The heart of Parenchyma - provides an interface for running parallel computations on one or 
@@ -40,21 +41,29 @@ impl<X> Backend<X> where X: ExtensionPackage {
     /// Initialize a new backend.
     pub fn new<F>() -> Result<Self> where F: BoxContext<X> + Framework + TryDefault<Err = Error> {
 
-        let framework = Box::new(F::try_default()?);
+        let framework = F::try_default()?;
         let selection = framework.available_hardware();
-        let context = framework.enclose(selection)?;
-
-        Ok(Backend { framework: framework, context })
+        Self::with(framework, selection)
     }
 
     /// Constructs a backend from the specified `framework` and `selection`.
     pub fn with<F>(fwrk: F, selection: Vec<Hardware>) -> Result<Self> 
         where F: BoxContext<X> + Framework {
 
-        let framework = Box::new(fwrk);
+        let mut framework = Box::new(fwrk);
         let context = framework.enclose(selection)?;
 
         Ok(Backend { framework, context })
+    }
+
+    /// Initialize a new Backend from a BackendConfig
+    pub fn try_from<F>(co: BackendConfig<F, X>) -> Result<Self> where F: BoxContext<X> + Framework {
+
+        let BackendConfig { framework, hardware, kind, .. } = co;
+        let mut backend = Self::with(framework, hardware)?;
+        backend.select(|h| h.kind == kind)?;
+
+        Ok(backend)
     }
 
     /// Set the device at the specified `index` as the active device.
@@ -63,6 +72,33 @@ impl<X> Backend<X> where X: ExtensionPackage {
     pub fn set_active(&mut self, index: usize) -> Result {
 
         self.context.set_active(index)
+    }
+
+    /// Select the first device that meets the specified requirements.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use parenchyma::{Backend, HardwareKind, Native};
+    ///
+    /// let mut native: Backend = Backend::new::<Native>().unwrap();
+    /// assert!(native.select(|hardware| hardware.kind == HardwareKind::CPU).is_ok());
+    /// ```
+    pub fn select<P>(&mut self, mut predicate: P) -> Result where P: FnMut(&Hardware) -> bool {
+        let opt_index = self.framework.selection()
+            .iter()
+            .enumerate()
+            .filter(|&(_, hardware)| predicate(hardware))
+            .map(|(index, _)| index)
+            .nth(0);
+
+        match opt_index {
+            Some(index) => self.set_active(index),
+            _ => {
+                let message = "There are no devices matching the specified criteria.";
+                Err(Error::new(ErrorKind::Framework { name: self.framework.name() }, message))
+            }
+        }
     }
 }
 
@@ -83,4 +119,20 @@ impl<X> utility::Has<Device> for Backend<X> where X: ExtensionPackage {
     }
 }
 
-// pub trait AsBackend { }
+/// Provides Backend Configuration, used to initialize a new Backend.
+#[derive(Debug)]
+pub struct BackendConfig<F, X> {
+    framework: F,
+    hardware: Vec<Hardware>,
+    kind: HardwareKind,
+    extension: PhantomData<X>,
+}
+
+impl<F, X> BackendConfig<F, X> {
+
+    /// Creates a new `BackendConfig`.
+    pub fn new(framework: F, hardware: Vec<Hardware>, kind: HardwareKind) -> Self {
+
+        BackendConfig { framework, hardware, kind, extension: PhantomData }
+    }
+}

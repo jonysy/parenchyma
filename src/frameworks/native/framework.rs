@@ -21,20 +21,20 @@ const NATIVE: &'static str = "Native";
 /// println!("{:#?}", tensor);
 /// ```
 #[derive(Debug)]
-pub struct Native;
+pub struct Native {
+    hardware: Vec<Hardware>,
+}
 
 impl Framework for Native {
 
     const FRAMEWORK_NAME: &'static str = NATIVE;
 
+    fn selection(&self) -> &[Hardware] {
+        &self.hardware
+    }
+    
     fn available_hardware(&self) -> Vec<Hardware> {
-        vec![Hardware {
-            id: 0,
-            framework: NATIVE,
-            kind: HardwareKind::Central,
-            name: String::from("HOST CPU"),
-            compute_units: 1,
-        }]
+        self.hardware.clone()
     }
 }
 
@@ -43,7 +43,7 @@ impl<X> BoxContext<X> for Native
           NativeContext<X>: Unsize<X::Extension> 
           {
 
-    fn enclose(&self, _: Vec<Hardware>) -> Result<Box<Context<Package = X>>> {
+    fn enclose(&mut self, _: Vec<Hardware>) -> Result<Box<Context<Package = X>>> {
         Ok(Box::new(NativeContext(PhantomData)))
     }
 }
@@ -52,6 +52,14 @@ impl TryDefault for Native {
     type Err = Error;
 
     fn try_default() -> Result<Native> {
-        Ok(Native)
+        Ok(Native {
+            hardware: vec![Hardware {
+                id: 0,
+                framework: NATIVE,
+                kind: HardwareKind::CPU,
+                name: String::from("HOST CPU"),
+                compute_units: 1,
+            }]
+        })
     }
 }

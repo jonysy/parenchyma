@@ -35,7 +35,7 @@ use utility::Has;
 ///
 /// ## Read/Write
 ///
-/// The methods `view`, `view_mut`, and `write` use `unsafe` to extend the lifetime of the returned 
+/// The methods `read`, `read_write`, and `write` use `unsafe` to extend the lifetime of the returned 
 /// reference to the internally owned memory chunk. The borrowck guarantees that the shared tensor 
 /// outlives all of its tensors, and that there is only one mutable borrow. 
 ///
@@ -49,16 +49,10 @@ use utility::Has;
 ///
 /// ### Summary
 ///
-/// If the caller reads (`view` or `view_mut`), memory is synchronized and the latest memory 
-/// object is returned. If the caller mutably borrows memory (`view_mut` and `write`), it's expected 
+/// If the caller reads (`read` or `read_write`), memory is synchronized and the latest memory 
+/// object is returned. If the caller mutably borrows memory (`read_write` and `write`), it's expected 
 /// that the memory will be overwritten, so the other memory locations are immediately considered 
 /// outdated.
-///
-/// ## Examples
-///
-/// ```{.text}
-/// TODO
-/// ```
 #[derive(Debug)]
 pub struct SharedTensor<T = f32> {
     /// The shape of the shared tensor.

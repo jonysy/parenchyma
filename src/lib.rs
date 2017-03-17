@@ -81,24 +81,35 @@
 //! extern crate parenchyma as pa;
 //! extern crate parenchyma_nn as pann;
 //! 
-//! use pa::{Backend, Native, OpenCL, SharedTensor};
+//! use pa::{Backend, BackendConfig, Native, OpenCL, SharedTensor};
+//! use pa::HardwareKind::GPU;
+//! use pann::NNPackage;
 //! 
 //! fn main() {
-//!     let ref native: Backend = Backend::new::<Native>()?;
+//!     let ref native: Backend = Backend::new::<Native>().unwrap();
+//! 
 //!     // Initialize an OpenCL or CUDA backend packaged with the NN extension.
-//!     let ref backend = pann::Backend::new::<OpenCL>()?;
+//!     let ref backend = {
+//!         let framework = OpenCL::new().unwrap();
+//!         let hardware = framework.available_hardware.clone();
+//!         let configuration = BackendConfig::<OpenCL, NNPackage>::new(framework, hardware, GPU);
+//! 
+//!         Backend::try_from(configuration).unwrap()
+//!     };
+//! 
+//!     let data: Vec<f64> = vec![3.5, 12.4, 0.5, 6.5];
+//!     let length = data.len();
 //! 
 //!     // Initialize two `SharedTensor`s.
-//!     let shape = 1;
-//!     let ref x = SharedTensor::<f32>::with(backend, shape, vec![3.5])?;
-//!     let ref mut result = SharedTensor::<f32>::new(shape);
+//!     let ref x = SharedTensor::with(backend, length, data).unwrap();
+//!     let ref mut result = SharedTensor::new(length);
 //! 
 //!     // Run the sigmoid operation, provided by the NN extension, on 
 //!     // your OpenCL/CUDA enabled GPU (or CPU, which is possible through OpenCL)
-//!     backend.sigmoid(x, result)?;
+//!     backend.sigmoid(x, result).unwrap();
 //! 
-//!     // Print the result: `[0.97068775] shape=[1], strides=[1]`
-//!     println!("{:?}", result.read(native)?.as_native()?);
+//!     // Print the result: `[0.97068775, 0.9999959, 0.62245935, 0.9984988] shape=[4], strides=[1]`
+//!     println!("{:?}", result.read(native).unwrap().as_native().unwrap());
 //! }
 //! ```
 //!
@@ -109,10 +120,10 @@
 //!
 //! If a framework isn't specified, the backend will try to use the most potent framework given
 //! the underlying hardware - which would probably be in this order: CUDA -> OpenCL -> Native. The 
-//! process might take longer, as every framework needs to be check and devices need to be loaded in
-//! order to identify the best setup. The time it takes to go through that process is a reasonable
-//! compromise as it would allow you to deploy a Parenchyma-backed application to almost any
-//! machine - server, desktops, mobiles, etc.
+//! process might take longer, as every framework needs to be checked and devices need to be loaded 
+//! in order to identify the best setup. The time it takes to go through that process is a 
+//! reasonable compromise as it would allow you to deploy a Parenchyma-backed application to almost 
+//! any machine - server, desktops, mobiles, etc.
 //!
 //! [Collenchyma]: https://github.com/autumnai/collenchyma
 //! [Autumn]: https://github.com/autumnai
@@ -134,7 +145,7 @@ pub mod utility;
 
 pub use self::frameworks::{native, opencl};
 
-pub use self::backend::Backend;
+pub use self::backend::{Backend, BackendConfig};
 pub use self::context::Context;
 pub use self::error::{Error, ErrorKind, Result};
 pub use self::extension::{Build, ExtensionPackage, Unextended};

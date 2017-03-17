@@ -108,9 +108,9 @@ pub enum HardwareKind {
     Accelerator,
     /// Used for devices that are host processors. The host processor runs the implementations
     /// and is a single or multi-core CPU.
-    Central,
+    CPU,
     /// Used for GPU devices.
-    Graphics,
+    GPU,
     /// Used for anything else.
     Other,
 }
