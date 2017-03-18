@@ -18,25 +18,21 @@ impl<T> Alloc<T> for NativeDevice {
     fn alloc(&self, shape: &Shape) -> Result<Memory<T>> {
         // TODO
 
-        let mut buffer = Vec::with_capacity(shape.capacity);
+        let mut buffer = Vec::with_capacity(shape.capacity());
 
         unsafe {
-            buffer.set_len(shape.capacity);
+            buffer.set_len(shape.capacity());
         }
 
         Ok(Memory::Native(
-            NativeMemory::from_shape_vec(
-                &shape.dims[..], 
-                buffer).unwrap()))
+            NativeMemory::from_shape_vec(shape.dimensions(), buffer).unwrap()))
     }
 
     fn allocwrite(&self, shape: &Shape, data: Vec<T>) -> Result<Memory<T>> {
         // TODO
 
         Ok(Memory::Native(
-            NativeMemory::from_shape_vec(
-                &shape.dims[..], 
-                data).unwrap()))
+            NativeMemory::from_shape_vec(shape.dimensions(), data).unwrap()))
     }
 }
 

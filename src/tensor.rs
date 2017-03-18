@@ -192,9 +192,9 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
         Ok(())
     }
 
-    /// Returns the number of elements the tensor can hold without reallocating.
-    pub fn capacity(&self) -> usize {
-        self.shape.capacity()
+    /// Returns the shape of the tensor.
+    pub fn shape(&self) -> &Shape {
+        &self.shape
     }
 }
 
@@ -400,7 +400,7 @@ pub struct Shape {
     ///
     /// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     /// ```
-    pub capacity: usize,
+    capacity: usize,
     /// The total number of indices.
     ///
     /// # Example
@@ -412,15 +412,20 @@ pub struct Shape {
     /// ```
     rank: usize,
     /// The dimensions of the tensor.
-    pub dims: Vec<usize>,
+    dims: Vec<usize>,
 }
 
 impl Shape {
 
-    /// Returns the capacity
+    /// Returns the number of elements the tensor can hold without reallocating.
     pub fn capacity(&self) -> usize {
 
         self.capacity
+    }
+
+    /// Returns the tensor's dimensions.
+    pub fn dimensions(&self) -> &[usize] {
+        &self.dims
     }
 }
 
