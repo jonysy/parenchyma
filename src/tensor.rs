@@ -160,19 +160,19 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
         }
     }
 
-    // /// Changes the capacity and shape of the tensor.
-    // ///
-    // /// **Caution**: Drops all copies which are not on the current device.
-    // ///
-    // /// `SharedTensor::reshape` is preferred over this method if the size of the old and new shape
-    // /// are identical because it will not reallocate memory.
-    // pub fn realloc<H, I>(&mut self, dev: &H, sh: I) -> Result 
-    //     where H: Has<Device>, 
-    //           I: Into<Shape> 
-    //           {
+    /// Changes the capacity and shape of the tensor.
+    ///
+    /// **Caution**: Drops all copies which are not on the current device.
+    ///
+    /// `SharedTensor::reshape` is preferred over this method if the size of the old and new shape
+    /// are identical because it will not reallocate memory.
+    pub fn realloc<H, I>(&mut self, dev: &H, sh: I) -> Result 
+        where H: Has<Device>, 
+              I: Into<Shape> 
+              {
 
-    //     unimplemented!()
-    // }
+        unimplemented!()
+    }
 
     /// Change the shape of the Tensor.
     ///

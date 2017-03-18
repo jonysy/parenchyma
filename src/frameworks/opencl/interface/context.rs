@@ -35,6 +35,10 @@ pub struct OpenCLContext<X> {
     pub(super) selection: Vec<OpenCLDevice>,
     /// The index of the _active_ device.
     pub(super) active: usize,
+    // TODO
+    // work_dim must be greater than zero and less than or equal 
+    // to CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS.
+    // max_work_item_dims: u32,
 }
 
 impl<X> OpenCLContext<X> {

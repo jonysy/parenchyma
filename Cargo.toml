@@ -1,6 +1,6 @@
 [package]
 name = "parenchyma"
-version = "0.0.32"
+version = "0.0.33"
 authors = ["Jony <jonysy@users.noreply.github.com>"]
 keywords = ["backend", "computation", "opencl", "cuda", "hpc"]
 categories = ["science"]
