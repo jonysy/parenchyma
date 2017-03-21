@@ -150,7 +150,7 @@ pub use self::context::Context;
 pub use self::error::{Error, ErrorKind, Result};
 pub use self::extension::{Build, ExtensionPackage, Unextended};
 pub use self::framework::{BoxContext, Framework};
-pub use self::frameworks::native::Native;
+pub use self::frameworks::native::{HOST, Native};
 pub use self::frameworks::opencl::OpenCL;
 pub use self::hardware::{Alloc, ComputeDevice, Device, Hardware, HardwareKind, Synch, Viewable};
 pub use self::memory::Memory;

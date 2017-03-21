@@ -787,6 +787,11 @@ impl KernelArg for Buffer {
     fn pointer(&self) -> foreign::cl_mem { unsafe { mem::transmute(self) } }
 }
 
+impl KernelArg for i32 {
+    fn size() -> usize { mem::size_of::<i32>() }
+    fn pointer(&self) -> foreign::cl_mem { unsafe { self as *const i32 as foreign::cl_mem } }
+}
+
 impl Kernel {
 
     /// Used to set the argument value for a specific argument of a kernel.

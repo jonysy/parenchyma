@@ -1,9 +1,17 @@
-use {Alloc, ComputeDevice, Memory, Result, Shape, Synch, Viewable};
+use {Alloc, ComputeDevice, Device, Memory, Result, Shape, Synch, Viewable};
 use super::NativeMemory;
+use utility::Has;
 
 /// The native device.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct NativeDevice;
+
+impl Has<Device> for NativeDevice {
+
+    fn get_ref(&self) -> &Device {
+        self
+    }
+}
 
 impl Viewable for NativeDevice {
 

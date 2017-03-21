@@ -389,7 +389,7 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
 }
 
 /// Describes the shape of a tensor.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Shape {
     /// The number of components.
     ///
@@ -464,6 +464,17 @@ impl From<[usize; 3]> for Shape {
         let capacity = array.iter().fold(1, |acc, &dims| acc * dims);
         let rank = 3;
         let dims = array.to_vec();
+
+        Shape { capacity, rank, dims }
+    }
+}
+
+impl<'slice> From<&'slice [usize]> for Shape {
+
+    fn from(slice: &[usize]) -> Shape {
+        let capacity = slice.iter().fold(1, |acc, &dims| acc * dims);
+        let rank = slice.len();
+        let dims = slice.to_vec();
 
         Shape { capacity, rank, dims }
     }

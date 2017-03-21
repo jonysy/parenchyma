@@ -9,3 +9,6 @@ mod context;
 mod device;
 mod framework;
 mod memory;
+
+/// Host CPU
+pub const HOST: &NativeDevice = &NativeDevice;
