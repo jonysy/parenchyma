@@ -792,6 +792,11 @@ impl KernelArg for i32 {
     fn pointer(&self) -> foreign::cl_mem { unsafe { self as *const i32 as foreign::cl_mem } }
 }
 
+impl KernelArg for usize {
+    fn size() -> usize { mem::size_of::<usize>() }
+    fn pointer(&self) -> foreign::cl_mem { unsafe { self as *const usize as foreign::cl_mem } }
+}
+
 impl Kernel {
 
     /// Used to set the argument value for a specific argument of a kernel.

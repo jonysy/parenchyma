@@ -79,11 +79,11 @@
 //!
 //! ```ignore
 //! extern crate parenchyma as pa;
-//! extern crate parenchyma_nn as pann;
+//! extern crate parenchyma_dnn as padnn;
 //! 
 //! use pa::{Backend, BackendConfig, Native, OpenCL, SharedTensor};
 //! use pa::HardwareKind::GPU;
-//! use pann::NNPackage;
+//! use padnn::package::ParenchymaDeep;
 //! 
 //! fn main() {
 //!     let ref native: Backend = Backend::new::<Native>().unwrap();
@@ -92,7 +92,7 @@
 //!     let ref backend = {
 //!         let framework = OpenCL::new().unwrap();
 //!         let hardware = framework.available_hardware.clone();
-//!         let configuration = BackendConfig::<OpenCL, NNPackage>::new(framework, hardware, GPU);
+//!         let configuration = BackendConfig::<OpenCL, ParenchymaDeep>::new(framework, hardware, GPU);
 //! 
 //!         Backend::try_from(configuration).unwrap()
 //!     };
