@@ -27,7 +27,7 @@ a few necessary additions/modifications.
 ## Example
 
 Parenchyma comes without any extension packages. The following example therefore assumes that
-you have added both `parenchyma` and the Parenchyma ExtensionPackage `parenchyma-dnn` to your
+you have added both `parenchyma` and the Parenchyma extension package `parenchyma-dnn` to your
 Cargo manifest.
 
 ```rust
