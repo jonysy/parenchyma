@@ -133,8 +133,8 @@
 #![feature(libc, unsize, untagged_unions)]
 
 #[macro_use] extern crate enum_primitive;
-#[macro_use] extern crate lazy_static;
-#[macro_use] extern crate log;
+// #[macro_use] extern crate lazy_static;
+// #[macro_use] extern crate log;
 
 extern crate libc;
 extern crate libloading as lib;
@@ -154,7 +154,7 @@ pub use self::frameworks::native::{HOST, Native};
 pub use self::frameworks::opencl::OpenCL;
 pub use self::hardware::{Alloc, ComputeDevice, Device, Hardware, HardwareKind, Synch, Viewable};
 pub use self::memory::Memory;
-pub use self::tensor::{Shape, SharedTensor};
+pub use self::tensor::{SharedTensor, TensorShape};
 
 mod backend;
 mod context;

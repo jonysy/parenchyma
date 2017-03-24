@@ -19,7 +19,7 @@ pub struct OpenCLMemory {
 }
 
 impl<T> ::opencl::high::KernelArg for Memory<T> {
-    fn size() -> usize { ::std::mem::size_of::<::opencl::foreign::cl_mem>() }
+    fn size(&self) -> usize { ::std::mem::size_of::<::opencl::foreign::cl_mem>() }
 
     fn pointer(&self) -> ::opencl::foreign::cl_mem {
 

@@ -1,8 +1,14 @@
-use std::mem;
-use std::cell::{Cell, RefCell};
+pub use self::map::u64Map;
+pub use self::shape::TensorShape;
+
+mod map;
+mod shape;
+mod utility;
+
+use std::cell::RefCell;
 use std::marker::PhantomData;
 
-use {Alloc, ComputeDevice, Device, ErrorKind, Memory, Result, Synch};
+use {Alloc, ComputeDevice, Device, ErrorKind, HOST, Memory, Result, Synch};
 use utility::Has;
 
 /// A shared tensor for framework-agnostic, memory-aware, n-dimensional storage. 
@@ -56,7 +62,7 @@ use utility::Has;
 #[derive(Debug)]
 pub struct SharedTensor<T = f32> {
     /// The shape of the shared tensor.
-    pub shape: Shape,
+    pub shape: TensorShape,
 
     /// A vector of buffers.
     copies: RefCell<Vec<(ComputeDevice, Memory<T>)>>,
@@ -94,7 +100,7 @@ pub struct SharedTensor<T = f32> {
 impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
 
     /// Constructs a new `SharedTensor` with a shape of `sh`.
-    pub fn new<A>(sh: A) -> Self where A: Into<Shape> {
+    pub fn new<A>(sh: A) -> Self where A: Into<TensorShape> {
 
         let shape = sh.into();
         let copies = RefCell::new(vec![]);
@@ -106,10 +112,11 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
     /// Constructs a new `SharedTensor` containing a `chunk` of data with a shape of `sh`.
     pub fn with<H, I>(con: &H, sh: I, chunk: Vec<T>) -> Result<Self>
         where H: Has<Device>,
-              I: Into<Shape>,
+              I: Into<TensorShape>,
               {
 
         let shape = sh.into();
+        shape.check(&chunk)?;
         let device = con.get_ref();
         let buffer = device.allocwrite(&shape, chunk)?;
         let copies = RefCell::new(vec![(device.view(), buffer)]);
@@ -121,7 +128,7 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
     /// Allocates memory on the active device and tracks it.
     pub fn alloc<H, I>(con: &H, sh: I) -> Result<Self> 
         where H: Has<Device>, 
-              I: Into<Shape> 
+              I: Into<TensorShape> 
               {
 
         let shape = sh.into();
@@ -162,16 +169,19 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
 
     /// Changes the capacity and shape of the tensor.
     ///
-    /// **Caution**: Drops all copies which are not on the current device.
+    /// **Caution**: Drops all copies, **including** the ones that are on the current device.
     ///
-    /// `SharedTensor::reshape` is preferred over this method if the size of the old and new shape
-    /// are identical because it will not reallocate memory.
-    pub fn realloc<H, I>(&mut self, dev: &H, sh: I) -> Result 
-        where H: Has<Device>, 
-              I: Into<Shape> 
-              {
-
-        unimplemented!()
+    /// `SharedTensor::reshape` should be preferred to this method if the size of the old and 
+    /// new shape are identical because it will not reallocate memory.
+    ///
+    /// ## TODO
+    ///
+    /// Should the copies on the current device remain and be reallocated (e.g., 
+    /// Collenchyma's implementation)?
+    pub fn realloc<I>(&mut self, sh: I) where I: Into<TensorShape> {
+        self.copies.borrow_mut().clear();
+        self.versions.set(0);
+        self.shape = sh.into();
     }
 
     /// Change the shape of the Tensor.
@@ -180,7 +190,7 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
     ///
     /// Returns an error if the size of the new shape is not equal to the size of the old shape.
     /// If you want to change the shape to one of a different size, use `SharedTensor::realloc`.
-    pub fn reshape<I>(&mut self, sh: I) -> Result where I: Into<Shape> {
+    pub fn reshape<I>(&mut self, sh: I) -> Result where I: Into<TensorShape> {
         let shape = sh.into();
 
         if shape.capacity() != self.shape.capacity() {
@@ -192,9 +202,23 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
         Ok(())
     }
 
-    /// Returns the shape of the tensor.
-    pub fn shape(&self) -> &Shape {
-        &self.shape
+    /// Write into a native Parenchyma `Memory`.
+    pub fn write_to_memory(&mut self, data: &[T]) -> Result where T: Copy {
+        self.write_to_memory_offset(data, 0)
+    }
+
+    /// Write into a native Parenchyma `Memory` with an offset.
+    pub fn write_to_memory_offset(&mut self, data: &[T], offset: usize) -> Result where T: Copy {
+        self.shape.check(data)?;
+
+        let mut memory = self.write(HOST)?;
+        let buffer = unsafe { memory.as_mut_native_unchecked().as_mut_flat() };
+
+        for (index, datum) in data.iter().enumerate() {
+            buffer[index + offset] = *datum;
+        }
+        
+        Ok(())
     }
 }
 
@@ -220,7 +244,7 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
 
         let (_, ref buffer) = borrowed_copies[i];
 
-        let memory = unsafe { extend_lifetime::<'shared>(buffer) };
+        let memory = unsafe { utility::extend_lifetime::<'shared>(buffer) };
 
         Ok(memory)
     }
@@ -245,7 +269,7 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
 
         let (_, ref mut buffer) = borrowed_copies[i];
 
-        let memory = unsafe { extend_lifetime_mut::<'shared>(buffer) };
+        let memory = unsafe { utility::extend_lifetime_mut::<'shared>(buffer) };
 
         Ok(memory)
     }
@@ -279,7 +303,7 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
 
         let (_, ref mut buffer) = borrowed_copies[i];
 
-        let memory = unsafe { extend_lifetime_mut::<'shared>(buffer) };
+        let memory = unsafe { utility::extend_lifetime_mut::<'shared>(buffer) };
 
         Ok(memory)
     }
@@ -386,151 +410,4 @@ impl<T> SharedTensor<T> where Device: Alloc<T> + Synch<T> {
 
         // TODO: try transfer indirectly via Native backend
     }
-}
-
-/// Describes the shape of a tensor.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Shape {
-    /// The number of components.
-    ///
-    /// # Example
-    ///
-    /// ```{.text}
-    /// // The following tensor has 9 components
-    ///
-    /// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    /// ```
-    capacity: usize,
-    /// The total number of indices.
-    ///
-    /// # Example
-    ///
-    /// The following tensor has a rank of 2:
-    ///
-    /// ```{.text}
-    /// [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    /// ```
-    rank: usize,
-    /// The dimensions of the tensor.
-    dims: Vec<usize>,
-}
-
-impl Shape {
-
-    /// Returns the number of elements the tensor can hold without reallocating.
-    pub fn capacity(&self) -> usize {
-
-        self.capacity
-    }
-
-    /// Returns the tensor's dimensions.
-    pub fn dimensions(&self) -> &[usize] {
-        &self.dims
-    }
-}
-
-impl From<usize> for Shape {
-
-    fn from(n: usize) -> Shape {
-        [n].into()
-    }
-}
-
-impl From<[usize; 1]> for Shape {
-
-    fn from(array: [usize; 1]) -> Shape {
-        let capacity = array[0];
-        let rank = 1;
-        let dims = array.to_vec();
-
-        Shape { capacity, rank, dims }
-    }
-}
-
-impl From<[usize; 2]> for Shape {
-
-    fn from(array: [usize; 2]) -> Shape {
-        let capacity = array.iter().fold(1, |acc, &dims| acc * dims);
-        let rank = 2;
-        let dims = array.to_vec();
-
-        Shape { capacity, rank, dims }
-    }
-}
-
-impl From<[usize; 3]> for Shape {
-
-    fn from(array: [usize; 3]) -> Shape {
-        let capacity = array.iter().fold(1, |acc, &dims| acc * dims);
-        let rank = 3;
-        let dims = array.to_vec();
-
-        Shape { capacity, rank, dims }
-    }
-}
-
-impl<'slice> From<&'slice [usize]> for Shape {
-
-    fn from(slice: &[usize]) -> Shape {
-        let capacity = slice.iter().fold(1, |acc, &dims| acc * dims);
-        let rank = slice.len();
-        let dims = slice.to_vec();
-
-        Shape { capacity, rank, dims }
-    }
-}
-
-/// A "newtype" with an internal type of `Cell<u64>`. `u64Map` uses [bit manipulation][1] to manage 
-/// memory versions.
-///
-/// [1]: http://stackoverflow.com/a/141873/2561805
-#[allow(non_camel_case_types)]
-#[derive(Debug)]
-pub struct u64Map(Cell<u64>);
-
-impl u64Map {
-    /// The maximum number of bits in the bit map can contain.
-    const CAPACITY: usize = 64;
-
-    /// Constructs a new `u64Map`.
-    fn new() -> u64Map {
-        u64Map::with(0)
-    }
-
-    /// Constructs a new `u64Map` with the supplied `n`.
-    fn with(n: u64) -> u64Map {
-        u64Map(Cell::new(n))
-    }
-
-    fn get(&self) -> u64 {
-        self.0.get()
-    }
-
-    fn set(&self, v: u64) {
-        self.0.set(v)
-    }
-
-    fn empty(&self) -> bool {
-        self.0.get() == 0
-    }
-
-    fn insert(&self, k: usize) {
-        self.0.set(self.0.get() | (1 << k))
-    }
-
-    fn contains(&self, k: usize) -> bool {
-        k < Self::CAPACITY && (self.0.get() & (1 << k) != 0)
-    }
-
-    fn latest(&self) -> u32 {
-        self.0.get().trailing_zeros()
-    }
-}
-
-unsafe fn extend_lifetime<'a, 'b, T>(t: &'a T) -> &'b T {
-    mem::transmute::<&'a T, &'b T>(t)
-}
-
-unsafe fn extend_lifetime_mut<'a, 'b, T>(t: &'a mut T) -> &'b mut T {
-    mem::transmute::<&'a mut T, &'b mut T>(t)
 }

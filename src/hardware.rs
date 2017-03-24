@@ -1,6 +1,6 @@
 use frameworks::native::NativeDevice;
 use frameworks::opencl::OpenCLDevice;
-use super::{Memory, Result, Shape};
+use super::{Memory, Result, TensorShape};
 
 /// An device capable of processing data.
 ///
@@ -59,10 +59,10 @@ impl ComputeDevice {
 pub trait Alloc<T> {
 
     /// Allocates memory on the device.
-    fn alloc(&self, shape: &Shape) -> Result<Memory<T>>;
+    fn alloc(&self, shape: &TensorShape) -> Result<Memory<T>>;
 
     /// Allocates and transfers memory `data` to the device.
-    fn allocwrite(&self, shape: &Shape, data: Vec<T>) -> Result<Memory<T>>;
+    fn allocwrite(&self, shape: &TensorShape, data: Vec<T>) -> Result<Memory<T>>;
 }
 
 /// Synchronizer

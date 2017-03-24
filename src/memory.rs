@@ -85,11 +85,11 @@ impl<T> Memory<T> {
         }
     }
 
-    // /// Returns the OpenCL memory, consuming the convertee.
-    // pub fn into_opencl(self) -> Option<OpenCLMemory> {
-    //     match self {
-    //         Memory::OpenCL(opencl) => Some(opencl),
-    //         _ => None
-    //     }
-    // }
+    /// Returns the OpenCL memory, consuming the convertee.
+    pub fn into_opencl(self) -> Option<OpenCLMemory> {
+        match self {
+            Memory::OpenCL(opencl) => Some(opencl),
+            _ => None
+        }
+    }
 }

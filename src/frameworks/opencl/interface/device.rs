@@ -1,4 +1,4 @@
-use {Alloc, ComputeDevice, ErrorKind, Memory, Result, Shape, Synch, Viewable};
+use {Alloc, ComputeDevice, ErrorKind, Memory, Result, TensorShape, Synch, Viewable};
 use std::os::raw::c_void;
 use super::OpenCLMemory;
 use super::super::{foreign, high};
@@ -53,7 +53,7 @@ impl Viewable for OpenCLDevice {
 impl<T> Alloc<T> for OpenCLDevice {
 
 
-    fn alloc(&self, shape: &Shape) -> Result<Memory<T>> {
+    fn alloc(&self, shape: &TensorShape) -> Result<Memory<T>> {
         // TODO
 
         let flag = foreign::CL_MEM_READ_WRITE;
@@ -64,7 +64,7 @@ impl<T> Alloc<T> for OpenCLDevice {
         Ok(Memory::OpenCL(cl_buffer))
     }
 
-    fn allocwrite(&self, shape: &Shape, mut data: Vec<T>) -> Result<Memory<T>> {
+    fn allocwrite(&self, shape: &TensorShape, mut data: Vec<T>) -> Result<Memory<T>> {
         // TODO
 
         let flag = foreign::CL_MEM_READ_ONLY | foreign::CL_MEM_COPY_HOST_PTR;
@@ -88,7 +88,7 @@ impl<T> Synch<T> for OpenCLDevice {
 
                 let length = native_memory.len();
                 let size = utility::allocated::<T>(length);
-                let slice = native_memory.as_slice_memory_order().unwrap();
+                let slice = native_memory.as_flat();
                 let slice_pointer = slice.as_ptr();
 
                 let ref buf = cl_memory.buf;
@@ -112,7 +112,7 @@ impl<T> Synch<T> for OpenCLDevice {
 
                 let length = native_memory.len();
                 let size = utility::allocated::<T>(length);
-                let slice = native_memory.as_slice_memory_order_mut().unwrap();
+                let slice = native_memory.as_mut_flat();
                 let slice_pointer = slice.as_mut_ptr();
 
                 let ref buf = cl_memory.buf;

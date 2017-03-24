@@ -24,6 +24,8 @@ pub enum ErrorKind {
     },
     /// Maximum number of backing memories has been reached (`BitMap` - type alias for `u64`).
     BitMapCapacityExceeded,
+    /// The tensor shape is incompatible with the shape of some data.
+    IncompatibleShape,
     /// Invalid reshaped tensor size.
     InvalidReshapedTensorSize,
     /// An error returned when attempting to access uninitialized memory.
@@ -53,6 +55,7 @@ impl ErrorKind {
         match *self {
             Framework { name } => name,
             BitMapCapacityExceeded => "the maximum number of backing memories has been reached",
+            IncompatibleShape => "the tensor shape is incompatible with the shape of the data",
             InvalidReshapedTensorSize => "size of the provided shape is not equal to the size of the current shape",
             UninitializedMemory => "uninitialized memory",
             AllocatedMemoryNotFoundForDevice => "memory allocation was not found for the provided device",

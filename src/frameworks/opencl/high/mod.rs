@@ -778,23 +778,23 @@ pub type Event = foreign::cl_event;
 pub struct Kernel(foreign::cl_kernel);
 
 pub trait KernelArg {
-    fn size() -> usize;
+    fn size(&self) -> usize;
     fn pointer(&self) -> *mut c_void;
 }
 
 impl KernelArg for Buffer {
-    fn size() -> usize { mem::size_of::<foreign::cl_mem>() }
+    fn size(&self) -> usize { mem::size_of::<foreign::cl_mem>() }
     fn pointer(&self) -> foreign::cl_mem { unsafe { mem::transmute(self) } }
 }
 
 impl KernelArg for i32 {
-    fn size() -> usize { mem::size_of::<i32>() }
-    fn pointer(&self) -> foreign::cl_mem { unsafe { self as *const i32 as foreign::cl_mem } }
+    fn size(&self) -> usize { mem::size_of::<i32>() }
+    fn pointer(&self) -> foreign::cl_mem { self as *const i32 as foreign::cl_mem }
 }
 
 impl KernelArg for usize {
-    fn size() -> usize { mem::size_of::<usize>() }
-    fn pointer(&self) -> foreign::cl_mem { unsafe { self as *const usize as foreign::cl_mem } }
+    fn size(&self) -> usize { mem::size_of::<usize>() }
+    fn pointer(&self) -> foreign::cl_mem { self as *const usize as foreign::cl_mem }
 }
 
 impl Kernel {
@@ -832,10 +832,25 @@ impl Kernel {
     /// data to be used as argument value.
     pub fn set_arg<A>(&self, position: u32, buf: &A) -> Result where A: KernelArg {
         unsafe {
-            let size = A::size();
+            let size = buf.size();
             let ptr = buf.pointer();
             let ret_value = foreign::clSetKernelArg(self.0, position, size, ptr);
             return utility::check(ret_value, || {});
+        }
+    }
+
+    // dynamic-dispatch..? TODO reconsider
+    pub fn set_args(&self, args: &[&KernelArg]) -> Result {
+        unsafe {
+            for (position, arg) in args.iter().enumerate() {
+
+                let size = arg.size();
+                let ptr = arg.pointer();
+                let ret_value = foreign::clSetKernelArg(self.0, position as u32, size, ptr);
+                utility::check(ret_value, || {})?;
+            }
+
+            Ok(())
         }
     }
 

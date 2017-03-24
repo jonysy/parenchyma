@@ -1,4 +1,5 @@
-use {Alloc, ComputeDevice, Device, Memory, Result, Shape, Synch, Viewable};
+use {Alloc, ComputeDevice, Device, Memory, Result, TensorShape, Synch, Viewable};
+use ndarray::Array;
 use super::NativeMemory;
 use utility::Has;
 
@@ -23,7 +24,7 @@ impl Viewable for NativeDevice {
 impl<T> Alloc<T> for NativeDevice {
 
 
-    fn alloc(&self, shape: &Shape) -> Result<Memory<T>> {
+    fn alloc(&self, shape: &TensorShape) -> Result<Memory<T>> {
         // TODO
 
         let mut buffer = Vec::with_capacity(shape.capacity());
@@ -33,14 +34,14 @@ impl<T> Alloc<T> for NativeDevice {
         }
 
         Ok(Memory::Native(
-            NativeMemory::from_shape_vec(shape.dimensions(), buffer).unwrap()))
+            NativeMemory::new(Array::from_shape_vec(shape.dimensions(), buffer).unwrap())))
     }
 
-    fn allocwrite(&self, shape: &Shape, data: Vec<T>) -> Result<Memory<T>> {
+    fn allocwrite(&self, shape: &TensorShape, data: Vec<T>) -> Result<Memory<T>> {
         // TODO
 
         Ok(Memory::Native(
-            NativeMemory::from_shape_vec(shape.dimensions(), data).unwrap()))
+            NativeMemory::new(Array::from_shape_vec(shape.dimensions(), data).unwrap())))
     }
 }
 
