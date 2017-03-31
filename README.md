@@ -10,7 +10,7 @@ Parenchyma started off as a hard fork of [Collenchyma][collenchyma-repo] (hence 
 extensible HPC framework developed by the [Autumn team] as well as an amazing group 
 of [contributors][collenchyma-contributors]. Aside from the name and overall design, the two 
 libraries are quite dissimilar to each other (e.g., auto-sync (thanks 
-to [@alexandermorozov](/../../issues/2)) and the fallback mechanism). Therefore, before migrating 
+to [@alexandermorozov](/../../issues/2)), async transfers, the fallback mechanism, etc.). Therefore, before migrating 
 over, one should go through the documentation carefully as to not make the mistake of misusing 
 the framework. Not doing so may result in unintended behavior for which Parenchyma 
 developers/contributors are not responsible.

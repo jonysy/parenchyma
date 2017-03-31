@@ -11,6 +11,7 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 enum_primitive = "0.1.1"
+futures = "0.1.11"
 lazy_static = "0.2.4"
 libloading = "0.3.2"
 log = "0.3.7"

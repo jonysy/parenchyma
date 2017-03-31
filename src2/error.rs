@@ -2,6 +2,9 @@
 
 use std::{error, fmt, result};
 
+/// A specialized `Result` type.
+pub type Result<T = (), E = Error> = result::Result<T, E>;
+
 /// The core error type used in Parenchyma.
 #[derive(Debug)]
 pub struct Error {
@@ -18,7 +21,7 @@ pub enum ErrorKind {
     /// function, rather than constructing an `Error` using this variant.
     Framework(&'static str),
     /// Maximum number of backing memories has been reached (`BitMap` - type alias for `u64`).
-    BitmapCapacityExceeded,
+    BitMapCapacityExceeded,
     /// The tensor shape is incompatible with the shape of some data.
     IncompatibleShape,
     /// Invalid reshaped tensor size.
@@ -49,7 +52,7 @@ impl ErrorKind {
 
         match *self {
             Framework(name) => name,
-            BitmapCapacityExceeded => "the maximum number of backing memories has been reached",
+            BitMapCapacityExceeded => "the maximum number of backing memories has been reached",
             IncompatibleShape => "the tensor shape is incompatible with the shape of the data",
             InvalidReshapedTensorSize => "size of the provided shape is not equal to the size of the current shape",
             UninitializedMemory => "uninitialized memory",
