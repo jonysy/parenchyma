@@ -1,0 +1,10 @@
+[package]
+name = "parenchyma-tr"
+version = "0.1.0"
+authors = ["Jony <jonysy@users.noreply.github.com>"]
+
+[dependencies]
+image = "0.17.0"
+
+[dependencies.parenchyma]
+path = "../parenchyma"
