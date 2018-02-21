@@ -24,46 +24,68 @@ a few necessary additions/modifications.
 > available in the Parenchyma project, as the different approaches that are currently being 
 > considered may prove to be better than the original approach.
 
-## Example
+### Tensor creation
 
-Parenchyma comes without any extension packages. The following example therefore assumes that
-you have added both `parenchyma` and the Parenchyma extension package `parenchyma-dnn` to your
-Cargo manifest.
+The easiest way to create a tensor is to use the `array` macro: 
 
 ```rust
-extern crate parenchyma as pa;
-extern crate parenchyma_dnn as padnn;
+#[macro_use(array)]
+extern crate parenchyma;
 
-use pa::{Backend, BackendConfig, Native, OpenCL, SharedTensor};
-use pa::HardwareKind::GPU;
-use padnn::package::ParenchymaDeep;
+use parenchyma::SharedTensor;
 
-fn main() {
-    let ref native: Backend = Backend::new::<Native>().unwrap();
+let c: SharedTensor<i32> = array![
+    [
+        [1,2,3],
+        [4,5,6]
+    ],
+    [
+        [11,22,33],
+        [44,55,66]
+    ],
+    [
+        [111,222,333],
+        [444,555,666]
+    ],
+    [
+        [1111,2222,3333],
+        [4444,5555,6666]
+    ]
+].into_tensor();
 
-    // Initialize an OpenCL or CUDA backend packaged with the NN extension.
-    let ref backend = {
-        let framework = OpenCL::new().unwrap();
-        let hardware = framework.available_hardware.clone();
-        let configuration = BackendConfig::<OpenCL, ParenchymaDeep>::new(framework, hardware, GPU);
+let t = c.tensor_ref();
 
-        Backend::try_from(configuration).unwrap()
-    };
+println!("{:?}", t);
 
-    let data: Vec<f64> = vec![3.5, 12.4, 0.5, 6.5];
-    let length = data.len();
+// shape=[4, 2, 3], strides=[6, 3, 1], layout=C (0x1), type=i32
+//
+// [[[1, 2, 3],
+//   [4, 5, 6]],
+//  [[11, 22, 33],
+//   [44, 55, 66]],
+//  [[111, 222, 333],
+//   [444, 555, 666]],
+//  [[1111, 2222, 3333],
+//   [4444, 5555, 6666]]]
+```
 
-    // Initialize two `SharedTensor`s.
-    let ref x = SharedTensor::with(backend, length, data).unwrap();
-    let ref mut result = SharedTensor::new(length);
+### Synchronizing data across multiple `Device`s and `Backend`s
 
-    // Run the sigmoid operation, provided by the NN extension, on 
-    // your OpenCL/CUDA enabled GPU (or CPU, which is possible through OpenCL)
-    backend.sigmoid(x, result).unwrap();
+```rust
+#[macro_use(array)]
+extern crate parenchyma;
 
-    // Print the result: `[0.97068775, 0.9999959, 0.62245935, 0.9984988] shape=[4], strides=[1]`
-    println!("{:?}", result.read(native).unwrap().as_native().unwrap());
-}
+use parenchyma::prelude::*;
+
+let ref cuda: Backend = {
+    let framework = Cuda::new()?;
+    let hardware = framework.available_hardware();
+    Backend::with(framework, hardware)?
+};
+
+let t = array![[1.5, 2.3, 3.7], [4.8, 5.2, 6.9]].into_tensor();
+
+t.synchronize(cuda)?;
 ```
 
 ## License

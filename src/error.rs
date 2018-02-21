@@ -1,12 +1,17 @@
 //! Types for working with errors.
 
-use std::{error, fmt, result};
+use std::{error, fmt};
+use std::ops::Deref;
 
-/// The core error type used in Parenchyma.
+/// A specialized `Result` typedef.
+pub type Result<T = (), E = Error> = ::std::result::Result<T, E>;
+
+/// The error structure used by the Parenchyma crate.
 #[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
-    error: Option<Box<error::Error + Send + Sync>>,
+    /// A boxed sendable, syncable `Error`.
+    inner: Option<Box<::std::error::Error + Send + Sync>>,
 }
 
 /// A set of general categories.
@@ -17,12 +22,6 @@ pub enum ErrorKind {
     /// Consider creating an framework-specific error by calling the `Error::from_framework` 
     /// function, rather than constructing an `Error` using this variant.
     Framework(&'static str),
-    /// Maximum number of backing memories has been reached (`BitMap` - type alias for `u64`).
-    BitmapCapacityExceeded,
-    /// The tensor shape is incompatible with the shape of some data.
-    IncompatibleShape,
-    /// Invalid reshaped tensor size.
-    InvalidReshapedTensorSize,
     /// An error returned when attempting to access uninitialized memory.
     UninitializedMemory,
     /// Unable to drop the provided device because a memory allocation was not found for it.
@@ -33,6 +32,18 @@ pub enum ErrorKind {
     NoAvailableSynchronizationRouteFound,
     /// An error occurred while attempting to allocate memory.
     MemoryAllocationFailed,
+    /// An error occurred while downcasting
+    MemoryDowncasting,
+
+    // MARK: - A set of tensor error categories
+
+    /// Maximum number of backing memories has been reached (`BitMap` - type alias for `u64`).
+    CapacityExceeded,
+    /// The tensor shape is incompatible with the shape of some data.
+    IncompatibleShape,
+    /// Invalid reshaped tensor size.
+    InvalidReshapedTensorSize,
+
     /// Any error not part of this list.
     Other,
     /// A marker variant that tells the compiler that users of this enum cannot match 
@@ -42,14 +53,12 @@ pub enum ErrorKind {
 }
 
 impl ErrorKind {
-
     fn as_str(&self) -> &'static str {
-
         use self::ErrorKind::*;
 
         match *self {
             Framework(name) => name,
-            BitmapCapacityExceeded => "the maximum number of backing memories has been reached",
+            CapacityExceeded => "the maximum number of backing memories has been reached",
             IncompatibleShape => "the tensor shape is incompatible with the shape of the data",
             InvalidReshapedTensorSize => "size of the provided shape is not equal to the size of the current shape",
             UninitializedMemory => "uninitialized memory",
@@ -57,78 +66,50 @@ impl ErrorKind {
             MemorySynchronizationFailed => "memory synchronization failed",
             NoAvailableSynchronizationRouteFound => "no available memory synchronization route",
             MemoryAllocationFailed => "memory allocation failed",
+            MemoryDowncasting => "something went wrong while downcasting",
             Other => "other error",
             _ => unreachable!(),
         }
     }
 }
 
-impl From<ErrorKind> for Error {
-
-    /// Creates a new error from a known kind of error
-    fn from(kind: ErrorKind) -> Error {
-
-        Error::_new(kind, None)
-    }
-}
-
 impl Error {
-
     /// Creates a new error from a known kind of error as well as an arbitrary error error.
     pub fn new<K, E>(kind: K, error: E) -> Error 
         where K: Into<ErrorKind>, 
-              E: Into<Box<error::Error + Send + Sync>>
-    {
-
+              E: Into<Box<error::Error + Send + Sync>> {
         Self::_new(kind.into(), Some(error.into()))
-    }
-
-    // /// Creates a new framework-specific error.
-    // pub fn from_framework<F>(error: F::E) -> Error where F: Framework {
-
-    //     let kind = ErrorKind::Framework { name: F::FRAMEWORK_NAME };
-
-    //     Self::_new(kind, Some(Box::new(error)))
-    // }
-
-    // "De-generization" technique..
-    fn _new(kind: ErrorKind, error: Option<Box<error::Error + Send + Sync>>) -> Error {
-
-        Error {
-            kind: kind,
-            error: error
-        }
     }
 
     /// Returns a reference to the inner error wrapped by this error (if any).
     pub fn get_ref(&self) -> Option<&(error::Error + Send + Sync + 'static)> {
-        use std::ops::Deref;
-
-        match self.error {
+        match self.inner {
             Some(ref error) => Some(error.deref()),
             _ => None
         }
     }
-
     /// Returns the corresponding `ErrorKind` for this error.
     pub fn kind(&self) -> ErrorKind {
         self.kind
     }
 }
 
+impl Error {
+    // "De-generization" technique..
+    fn _new(kind: ErrorKind, error: Option<Box<error::Error + Send + Sync>>) -> Error {
+        Error { kind, inner: error }
+    }
+}
+
 impl fmt::Display for Error {
-
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-
         write!(fmt, "{}", self.kind.as_str())
     }
 }
 
 impl error::Error for Error {
-
     fn description(&self) -> &str {
-
-        if let Some(ref error) = self.error {
+        if let Some(ref error) = self.inner {
             error.description()
         } else {
             self.kind.as_str()
@@ -136,15 +117,17 @@ impl error::Error for Error {
     }
 
     fn cause(&self) -> Option<&error::Error> {
-
-        match self.error {
-            Some(ref error) => {
-                error.cause()
-            },
-            _ => {
-                None
-            }
+        match self.inner {
+            Some(ref error) => error.cause(),
+            _ => None,
         }
+    }
+}
+
+impl From<ErrorKind> for Error {
+    /// Creates a new error from a known kind of error
+    fn from(kind: ErrorKind) -> Error {
+        Error::_new(kind, None)
     }
 }
 

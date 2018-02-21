@@ -1,6 +1,6 @@
 [package]
 name = "parenchyma"
-version = "0.0.33"
+version = "0.0.4"
 authors = ["Jony <jonysy@users.noreply.github.com>"]
 keywords = ["backend", "computation", "opencl", "cuda", "hpc"]
 categories = ["science"]
@@ -10,12 +10,13 @@ repository = "https://github.com/lychee-eng/parenchyma"
 license = "MIT/Apache-2.0"
 
 [dependencies]
-enum_primitive = "0.1.1"
-futures = "0.1.11"
-lazy_static = "0.2.4"
-libloading = "0.3.2"
-log = "0.3.7"
-ndarray = "0.8.0"
+# enum_primitive = "0.1.1"
+# futures = "0.1.11"
+lazy_static = "0.2.9"
+# libloading = "0.3.2"
+log = "0.4"
+ndarray = "0.10.0"
+ocl = "0.16.0"
 
 # [dev-dependencies]
 # compiletest_rs = "0.2.5"
