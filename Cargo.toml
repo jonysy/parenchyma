@@ -1,0 +1,13 @@
+[package]
+name = "parenchyma-blas"
+version = "0.0.1"
+authors = ["Jony <jonysy@users.noreply.github.com>"]
+license = "MIT/Apache-2.0"
+
+[dependencies]
+ocl = "0.16.0"
+rblas = "0.0.13"
+
+[dependencies.parenchyma]
+path = "../parenchyma"
+version = "0.0.4"
