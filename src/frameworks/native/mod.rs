@@ -2,7 +2,11 @@ use parenchyma::error::{Error, ErrorKind, Result};
 use parenchyma::extension_package::Dependency;
 use parenchyma::frameworks::NativeContext as Context;
 use parenchyma::tensor::SharedTensor;
+
 use rblas;
+use rblas::math::mat::Mat;
+use rblas::matrix::Matrix as IMatrix;
+
 use super::super::{Extension, Package, Transposition};
 use super::super::extension_package::{Matrix, MatrixVector, Vector};
 
@@ -53,15 +57,77 @@ impl<P> Vector for Context<P> where P: Dependency<Package> {
 
 impl<P> Matrix for Context<P> where P: Dependency<Package> {
     fn gemm(
-        &self, 
-        alpha: &SharedTensor, 
-        a_transpose: Transposition, 
-        a: &SharedTensor, 
-        b_transpose: Transposition, 
-        b: &SharedTensor, 
-        beta: &SharedTensor, 
-        c: &mut SharedTensor) -> Result {
-        unimplemented!()
+        self: &Self,
+        alpha: &SharedTensor,
+        amatrix: &SharedTensor,
+        amatrix_transposition: Transposition,
+        beta: &SharedTensor,
+        bmatrix: &SharedTensor,
+        bmatrix_transposition: Transposition,
+        cmatrix: &mut SharedTensor) -> Result {
+
+        let a_0 = amatrix.shape().dimensions()[0] as i32;
+        let a_1 = amatrix.shape().dimensions().iter().skip(1).fold(1, |prod, i| prod * i) as i32;
+
+        let b_0 = bmatrix.shape().dimensions()[0] as i32;
+        let b_1 = bmatrix.shape().dimensions().iter().skip(1).fold(1, |prod, i| prod * i) as i32;
+
+        let c_0 = cmatrix.shape().dimensions()[0] as i32;
+        let c_1 = cmatrix.shape().dimensions().iter().skip(1).fold(1, |prod, i| prod * i) as i32;
+
+        // let n = if bmatrix_transposition == Transposition::NoTranspose { b_1 }  else { b_0 };
+
+        // let (m, k) = if amatrix_transposition == Transposition::NoTranspose {
+        //     (a_0, a_1)
+        // } else {
+        //     (a_1, a_0)
+        // };
+
+        let mut input = as_matrix(amatrix.as_slice()?, a_0 as usize, a_1 as usize);
+        let mut weights = as_matrix(bmatrix.as_slice()?, b_0 as usize, b_1 as usize);
+        let mut output = as_matrix(cmatrix.as_slice()?, c_0 as usize, c_1 as usize);
+
+        rblas::Gemm::gemm(
+            &alpha.as_slice()?[0], 
+            amatrix_transposition.into(), 
+            &input, 
+
+            bmatrix_transposition.into(),
+            &weights,
+            &beta.as_slice()?[0], 
+
+            &mut output
+        );
+
+        read_from_matrix(&output, cmatrix.as_mut_slice()?);
+
+        Ok(())
+    }
+}
+
+fn as_matrix(slice: &[f32], nrows: usize, ncols: usize) -> Mat<f32> {
+    let mut mat: Mat<f32> = Mat::new(nrows, ncols);
+
+    for i in 0..nrows {
+        for j in 0..ncols {
+            let index = ncols * i + j;
+            unsafe {
+                *mat.as_mut_ptr().offset(index as isize) = slice[index].clone();
+            }
+        }
+    }
+
+    mat
+}
+
+fn read_from_matrix(mat: &Mat<f32>, slice: &mut [f32]) {
+    let n = mat.rows();
+    let m = mat.cols();
+    for i in 0..n {
+        for j in 0..m {
+            let index = m * i + j;
+            slice[index] = mat[i][j].clone();
+        }
     }
 }
 

@@ -54,7 +54,7 @@ extern crate ocl;
 extern crate parenchyma;
 extern crate rblas;
 
-pub use self::extension_package::{Extension, Package, Transposition};
+pub use self::extension_package::{Extension, GenericMatrix, Package, Transposition};
 
 mod extension_package;
 mod frameworks;

@@ -20,21 +20,34 @@ use super::Transposition;
 //     }
 // }
 
-/// `Matrix` consists of level 3 BLAS routines - matrix-matrix operations, including a general 
-/// matrix multiplication.
+pub struct GenericMatrix<'a> {
+    /// The factor of matrix A (scalar).
+    pub scalar: &'a SharedTensor,
+    /// Buffer object storing matrix A.
+    pub matrix: &'a SharedTensor,
+    /// How matrix A is to be transposed.
+    pub transposition: Transposition,
+}
+
+/// The trait `Matrix` consists of level 3 BLAS routines - matrix-matrix operations, including a 
+/// general matrix multiplication.
 pub trait Matrix {
-    /// Provides the gemm operation.
-    ///
     /// Computes a matrix-matrix product with general matrices.
+    ///
+    /// # Arguments
+    ///
+    /// * `alpha` - The factor of matrix A (scalar).
+    /// * `amatrix` - The buffer object storing matrix A..
+    /// * `amatrix_transposition` - How matrix A is to be transposed.
     fn gemm(
-        &self, 
-        _alpha: &SharedTensor, 
-        _a_transpose: Transposition, 
-        _a: &SharedTensor, 
-        _b_transpose: Transposition, 
-        _b: &SharedTensor, 
-        _beta: &SharedTensor, 
-        _c: &mut SharedTensor) -> Result {
+        self: &Self,
+        alpha: &SharedTensor,
+        amatrix: &SharedTensor,
+        amatrix_transposition: Transposition,
+        beta: &SharedTensor,
+        bmatrix: &SharedTensor,
+        bmatrix_transposition: Transposition,
+        cmatrix: &mut SharedTensor) -> Result {
         unimplemented!()
     }
 }

@@ -1,7 +1,7 @@
 pub use self::axpby::Axpby;
 pub use self::level1::Vector;
 pub use self::level2::MatrixVector;
-pub use self::level3::Matrix;
+pub use self::level3::{GenericMatrix, Matrix};
 pub use self::transpose::Transposition;
 
 mod axpby;
