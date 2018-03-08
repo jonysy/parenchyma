@@ -7,11 +7,9 @@ pub trait Axpby: super::Vector {
     ///
     /// Consists of a scal(b, y) followed by a axpby(a,x,y).
     fn axpby(&self, a: &SharedTensor, x: &SharedTensor, b: &SharedTensor, y: &mut SharedTensor) -> Result {
-        // try!(self.scal_plain(b, y));
-        // try!(self.axpy_plain(a, x, y));
-        // Ok(())
-
-        unimplemented!()
+        self.scal(b, y)?;
+        self.axpy(a, x, y)?;
+        Ok(())
     }
 }
 
