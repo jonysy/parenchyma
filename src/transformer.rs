@@ -1,5 +1,5 @@
-use parenchyma::SharedTensor;
 use parenchyma::error::Result;
+use parenchyma::prelude::SharedTensor;
 
 /// An trait for dealing with transformers so that any transformable data type can be 
 /// transformed into a `SharedTensor`.
@@ -14,6 +14,6 @@ pub trait Transformer {
     /// An `Error` is returned if the expected capacity (defined by the `shape`) differs from the
     /// observed one.
     fn transform(&self, shape: &[usize]) -> Result<SharedTensor<f32>> {
-        SharedTensor::new(shape, self.as_vector())
+        SharedTensor::with(shape, self.as_vector())
     }
 }
