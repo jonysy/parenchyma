@@ -22,7 +22,7 @@ impl<P> Backward for Context<P> where
             .map(|(x_val, x_diff_val)| {
                 x_diff_val - x_val.exp() * sum
             });
-        result_diff.write(res)?;
+        result_diff.write_iter(res)?;
         Ok(())
     }
 
@@ -35,7 +35,7 @@ impl<P> Backward for Context<P> where
         let res = x.as_slice().unwrap().iter()
             .zip(x_diff.as_slice().unwrap().iter())
             .map(|(x, dx)| if *x > 0.0 { *dx } else { 0.0 });
-        result_diff.write(res)?;
+        result_diff.write_iter(res)?;
         Ok(())
     }
 
@@ -47,7 +47,7 @@ impl<P> Backward for Context<P> where
         result_diff: &mut SharedTensor) -> Result {
         let res = x.as_slice().unwrap().iter().zip(x_diff.as_slice().unwrap().iter())
             .map(|(t, dt)| *t * (1.0 -*t) * *dt);
-        result_diff.write(res)?;
+        result_diff.write_iter(res)?;
         Ok(())
     }
 
@@ -63,7 +63,7 @@ impl<P> Backward for Context<P> where
             dot += t * dt;
         }
         let res = sig_data_slice.iter().zip(sig_dx_slice.iter()).map(|(t, dt)| t * (dt - dot));
-        result_diff.write(res)?;
+        result_diff.write_iter(res)?;
         Ok(())
     }
 
@@ -76,7 +76,7 @@ impl<P> Backward for Context<P> where
         let res = x.as_slice().unwrap().iter()
             .zip(x_diff.as_slice().unwrap().iter())
             .map(|(x, dx)| (1.0 - x.powi(2)) * *dx);
-        result_diff.write(res)?;
+        result_diff.write_iter(res)?;
         Ok(())
     }
 }
@@ -94,19 +94,19 @@ impl<P> Forward for Context<P> where
         }
         logsum = max_input + logsum.ln();
         let res = x.as_slice().unwrap().iter().map(|t| t - logsum);
-        result.write(res)?;
+        result.write_iter(res)?;
         Ok(())
     }
 
     fn relu(&self, x: &SharedTensor, result: &mut SharedTensor) -> Result {
         let res = x.as_slice().unwrap().iter().map(|elem| elem.max(0.0));
-        result.write(res)?;
+        result.write_iter(res)?;
         Ok(())
     }
 
     fn sigmoid(&self, x: &SharedTensor, result: &mut SharedTensor) -> Result {
         let res = x.as_slice().unwrap().iter().map(|x| 1.0 / (1.0 + (-*x).exp()));
-        result.write(res)?;
+        result.write_iter(res)?;
         Ok(())
     }
 
@@ -118,13 +118,13 @@ impl<P> Forward for Context<P> where
             sum += exp;
         }
         let res = exps.iter().map(|t| t / sum);
-        result.write(res)?;
+        result.write_iter(res)?;
         Ok(())
     }
 
     fn tanh(&self, x: &SharedTensor, result: &mut SharedTensor) -> Result {
         let res = x.as_slice().unwrap().iter().map(|elem| elem.tanh());
-        result.write(res)?;
+        result.write_iter(res)?;
         Ok(())
     }
 }

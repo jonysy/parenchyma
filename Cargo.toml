@@ -10,3 +10,6 @@ ocl = "0.15.0"
 [dependencies.parenchyma]
 path = "../parenchyma"
 version = "0.0.4"
+
+[dev-dependencies]
+lazy_static = "1.1.0"

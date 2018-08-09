@@ -19,7 +19,7 @@ mod deep_specification_native {
     unsafe impl Sync for TestBackend { }
 
     lazy_static! {
-        static ref BACKEND: TestBackend = TestBackend(Backend::new::<Native>().unwrap());
+        static ref BACKEND: TestBackend = TestBackend(Backend::new::<Native<_>>().unwrap());
     }
 
     fn get_memory() -> (SharedTensor, SharedTensor) {
