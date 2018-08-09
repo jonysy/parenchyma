@@ -100,34 +100,34 @@ pub struct SharedTensor<T = f32> {
     synch_map: TensorMap,
 }
 
-impl<T> From<TensorShape> for SharedTensor<T> where T: 'static, ComputeDevice: Allocate<T> {
-    /// Creates an empty shared tensor with a shape of `sh`.
-    fn from(shape: TensorShape) -> SharedTensor<T> {
-        SharedTensor::new(shape).unwrap()
+impl<I,T> From<I> for SharedTensor<T> 
+    where I: Into<TensorShape>, 
+          T: 'static + Clone + ::num::Zero, 
+          ComputeDevice: Allocate<T> {
+
+    /// Creates an empty shared tensor with the provided `shape`.
+    fn from(shape: I) -> SharedTensor<T> {
+        let tensor_shape: TensorShape = shape.into();
+        let length = tensor_shape.capacity();
+        SharedTensor::<T>::with(tensor_shape, vec![T::zero(); length]).unwrap()
     }
 }
 
 impl<T> SharedTensor<T> where T: 'static, ComputeDevice: Allocate<T> {
-    /// Creates an empty shared tensor with the provided `shape`.
-    pub fn new<I>(shape: I) -> Result<SharedTensor<T>> where I: Into<TensorShape> {
-        Ok(SharedTensor {
-            memories: RefCell::new(vec![]),
-            shape: shape.into(),
-            synch_map: TensorMap::new(),
-        })
-    }
     pub fn scalar(value: T) -> Result<SharedTensor<T>> {
         Ok(array![value].into())
     }
     /// Constructs a new  shared tensor containing the provided `data` with a `shape`.
-    pub fn with<I>(shape: I, data: Vec<T>) -> Result<SharedTensor<T>> where I: Into<TensorShape> {
+    pub fn with<I, V>(shape: I, data: V) -> Result<SharedTensor<T>> 
+        where I: Into<TensorShape>, 
+              V: Into<Vec<T>> {
         use ndarray::ArrayBase;
         use super::frameworks::NativeMemory;
 
         let shape: TensorShape = shape.into();
 
         let memory = NativeMemory(
-            ArrayBase::from_shape_vec(shape.dimensions(), data)
+            ArrayBase::from_shape_vec(shape.dimensions(), data.into())
                 .map_err(|e| Error::new(ErrorKind::IncompatibleShape, e))?
         );
         let memories = RefCell::new(vec![box memory as Box<Memory<T>>]);
@@ -166,10 +166,12 @@ impl<T> SharedTensor<T> where T: 'static, ComputeDevice: Allocate<T> {
     ///
     /// Should the copies on the current device remain and be reallocated (e.g., 
     /// Collenchyma's implementation)?
-    pub fn resize<S>(&mut self, shape: S) -> Result where S: Into<TensorShape> {
-        self.memories.borrow_mut().clear();
-        self.synch_map.set(0);
-        self.shape = shape.into();
+    pub fn resize<S>(&mut self, shape: S) -> Result 
+        where S: Into<TensorShape>, T: Clone + ::num::Zero {
+        // self.memories.borrow_mut().clear();
+        // self.synch_map.set(0);
+        // self.shape = shape.into();
+        *self = SharedTensor::from(shape);
         Ok(())
     }
     /// Synchronizes data with the active device on the specified `backend`.
@@ -313,16 +315,36 @@ impl<T> SharedTensor<T> where T: 'static, ComputeDevice: Allocate<T> {
             .ok_or(Error::new(
                 ErrorKind::Other, "the array’s data is not contiguous and in standard order"))
     }
+
     /// Write into a native Parenchyma `Memory`.
-    pub fn write(&mut self, data: &[T]) -> Result where T: Copy {
-        self.write_offset(data, 0)
+    pub fn write_slice(&mut self, data: &[T]) -> Result where T: Copy {
+        self.write_offset_slice(data, 0)
     }
+    
     /// Write into a native Parenchyma `Memory` with an `offset`.
-    pub fn write_offset(&mut self, data: &[T], offset: usize) -> Result where T: Copy {
+    pub fn write_offset_slice(&mut self, data: &[T], offset: usize) -> Result where T: Copy {
         let buf = self.as_mut_slice_unsynched()?;
 
         for (i, datum) in data.iter().enumerate() {
             buf[i + offset] = *datum;
+        }
+        
+        Ok(())
+    }
+
+    /// Write into a native Parenchyma `Memory`.
+    pub fn write_iter<I>(&mut self, data: I) -> Result where T: Copy, I: Iterator<Item=T> {
+        self.write_offset_iter(data, 0)
+    }
+
+    /// Write into a native Parenchyma `Memory` with an `offset`.
+    pub fn write_offset_iter<I>(&mut self, data: I, offset: usize) -> Result 
+        where T: Copy, 
+              I: Iterator<Item=T> {
+        let buf = self.as_mut_slice_unsynched()?;
+
+        for (i, datum) in data.enumerate() {
+            buf[i + offset] = datum;
         }
         
         Ok(())
@@ -342,7 +364,7 @@ impl<T> SharedTensor<T> where T: 'static, ComputeDevice: Allocate<T> {
     fn autosync<'a>(&'a self, codev: &ComputeDevice, overwritable: bool) -> Result<usize> {
 
         if self.synch_map.empty() {
-
+            // TODO auto initialize
             Err(ErrorKind::UninitializedMemory.into())
         } else {
             let i = self.fetchsert(codev).and_then(|i| 

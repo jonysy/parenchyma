@@ -1,10 +1,11 @@
-extern crate parenchyma as pa;
+extern crate parenchyma;
 
 #[cfg(test)]
 mod backend_spec {
     mod native {
         use std::rc::Rc;
-        use pa::{Backend, GenericBackend, Native};
+        use parenchyma::backend::Backend;
+        use parenchyma::frameworks::Native;
 
         #[test]
         fn it_can_create_default_backend() {
@@ -18,9 +19,8 @@ mod backend_spec {
             use_ibackend(backend);
         }
 
-        fn use_ibackend<B: GenericBackend>(backend: Rc<B>) {
-            let backend: Rc<GenericBackend> = backend.clone();
-            let _ = backend.context();
+        fn use_ibackend(backend: Rc<Backend>) {
+            let backend: Rc<Backend> = backend.clone();
         }
     }
 
@@ -33,21 +33,24 @@ mod backend_spec {
     //     }
     // }
 
-    mod opencl {
-        use pa::{Backend, Framework, FrameworkCtor, OpenCL};
+    // mod opencl {
+    //     //use parenchyma::{Backend, Framework, FrameworkCtor, OpenCL};
+    //     use parenchyma::backend::Backend;
+    //     use parenchyma::frameworks::OpenCL;
+    //     use parenchyma::prelude::*;
 
-        #[test]
-        fn it_can_create_default_backend() {
-            let backend: Result<Backend, _> = Backend::new::<OpenCL>();
-            assert!(backend.is_ok());
-        }
+    //     #[test]
+    //     fn it_can_create_default_backend() {
+    //         let backend: Result<Backend, _> = Backend::new::<OpenCL>();
+    //         assert!(backend.is_ok());
+    //     }
 
-        #[test]
-        fn it_can_manually_create_backend() {
-            let framework = OpenCL::new().unwrap();
-            let hardware = framework.available_hardware().to_vec();
-            let backend: Backend = Backend::with(framework, hardware).unwrap();
-            println!("{:?}", backend);
-        }
-    }
+    //     #[test]
+    //     fn it_can_manually_create_backend() {
+    //         let framework = OpenCL::new().unwrap();
+    //         let hardware = framework.hardware().to_vec();
+    //         let backend: Backend = Backend::with(framework, hardware).unwrap();
+    //         println!("{:?}", backend);
+    //     }
+    // }
 }

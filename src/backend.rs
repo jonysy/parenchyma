@@ -21,12 +21,13 @@
 //! ```
 //! extern crate parenchyma;
 //!
+//! use parenchyma::frameworks::Native;
 //! use parenchyma::prelude::*;
 //!
 //! // The `new` function initializes the framework on which it's called.
-//! let framework = Native::new().unwrap();
+//! let framework: Native = Native::new().unwrap();
 //! // The available frameworks can be obtained through the chosen `framework`.
-//! let hardware = framework.hardware.to_vec();
+//! let hardware = framework.hardware().to_vec();
 //! // A ready to go backend can be created from the framework and hardware. It's worth noting that
 //! // configuration options will be available in future versions.
 //! let backend: Backend = Backend::with(framework, hardware).unwrap();
@@ -43,7 +44,7 @@ use super::framework::{Framework, FrameworkCtor};
 use super::hardware::Hardware;
 
 /// The representation of the backend.
-pub struct Backend<Package> {
+pub struct Backend<Package = ()> {
     /// Provides the Framework.
     ///
     /// The Framework implementation such as OpenCL, CUDA, etc. defines, which should be 
@@ -68,7 +69,7 @@ impl<P> Backend<P> where P: ExtensionPackage {
     ///
     /// The return value is a backend if the process goes well; otherwise, it returns 
     /// a simple error.
-    pub fn new<F>() -> Result<Self> where F: FrameworkCtor<P>, F::Context: ContextCtor<P,F=F> {
+    pub fn new<F>() -> Result<Self> where F: FrameworkCtor, F::Context: ContextCtor<P,F=F> {
         let framework = F::new()?;
         let hardware = framework.hardware().to_vec();
         Backend::with(framework, hardware)
@@ -86,7 +87,7 @@ impl<P> Backend<P> where P: ExtensionPackage {
     /// a simple error.
     pub fn with<F>(framework: F, selection: Vec<Hardware>) 
         -> Result<Self> 
-        where F: FrameworkCtor<P>, 
+        where F: FrameworkCtor, 
               F::Context: ContextCtor<P,F=F> {
         info!("[PARENCHYMA] Constructing a backend using the {} framework", framework.name());
         let context = box F::Context::new(&framework, &selection)? as Box<Context<Package=P>>;

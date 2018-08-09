@@ -30,7 +30,7 @@ impl<P> ContextCtor<P> for NativeContext<P>
     where P: 'static + ExtensionPackage, 
           NativeContext<P>: Unsize<P::Extension> {
             
-    type F = Native;
+    type F = Native<P>;
 
     fn new(_: &Self::F, _: &[Hardware]) -> Result<Self> {
         Ok(NativeContext(PhantomData))

@@ -88,7 +88,7 @@ impl<P> ContextCtor<P> for OpenCLContext<P>
     where P: 'static + ExtensionPackage + ExtensionPackageCtor<OpenCLContext<()>>, 
           OpenCLContext<P>: Unsize<P::Extension> {
             
-    type F = OpenCL;
+    type F = OpenCL<P>;
 
     fn new(framework: &Self::F, selection: &[Hardware]) -> Result<Self> {
 

@@ -13,6 +13,7 @@
 //! ```
 //! extern crate parenchyma;
 //! 
+//! use parenchyma::frameworks::Native;
 //! use parenchyma::prelude::*;
 //!
 //! // A ready to go backend can be created by simply providing the framework type.
@@ -43,7 +44,7 @@ pub trait Framework: 'static {
 /// other words, this trait is split into object-safe and non-object-safe parts.
 ///
 /// todo: generic associated types may help here..
-pub trait FrameworkCtor<P>: Framework + Sized {
+pub trait FrameworkCtor: Framework + Sized {
     /// The context representation for the framework.
     type Context;
     /// Initializes a `Framework`.

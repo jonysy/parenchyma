@@ -94,14 +94,16 @@
 //!
 //! [Collenchyma]: https://github.com/autumnai/collenchyma
 //! [Autumn]: https://github.com/autumnai
-#![feature(box_syntax, crate_in_paths, dyn_trait, get_type_id, macro_reexport, non_modrs_mods, unsize)]
+#![feature(box_syntax, crate_in_paths, get_type_id, non_modrs_mods, unsize, use_extern_macros)]
 
 #[macro_use]
 extern crate log;
-#[macro_reexport(array)]
 #[macro_use(array)]
 extern crate ndarray;
+extern crate num;
 extern crate ocl;
+
+pub use self::ndarray::array;
 
 pub mod backend;
 pub mod changelog;

@@ -32,9 +32,9 @@ The easiest way to create a tensor is to use the `array` macro:
 #[macro_use(array)]
 extern crate parenchyma;
 
-use parenchyma::SharedTensor;
+use parenchyma::prelude::*;
 
-let c: SharedTensor<i32> = array![
+let t: SharedTensor<i32> = array![
     [
         [1,2,3],
         [4,5,6]
@@ -51,9 +51,7 @@ let c: SharedTensor<i32> = array![
         [1111,2222,3333],
         [4444,5555,6666]
     ]
-].into_tensor();
-
-let t = c.tensor_ref();
+].into();
 
 println!("{:?}", t);
 
@@ -69,7 +67,9 @@ println!("{:?}", t);
 //   [4444, 5555, 6666]]]
 ```
 
-### Synchronizing data across multiple `Device`s and `Backend`s
+### Synchronizing Data
+
+Synchronizing data across multiple compute devices and backends is straightforward.
 
 ```rust
 #[macro_use(array)]
@@ -77,13 +77,9 @@ extern crate parenchyma;
 
 use parenchyma::prelude::*;
 
-let ref cuda: Backend = {
-    let framework = Cuda::new()?;
-    let hardware = framework.available_hardware();
-    Backend::with(framework, hardware)?
-};
+let ref cuda: Backend = Backend::new::<Cuda>()?;
 
-let t = array![[1.5, 2.3, 3.7], [4.8, 5.2, 6.9]].into_tensor();
+let t = array![[1.5, 2.3, 3.7], [4.8, 5.2, 6.9]].into();
 
 t.synchronize(cuda)?;
 ```

@@ -2,6 +2,7 @@ use ocl;
 use ocl::Platform as Implementation;
 use ocl::enums::{DeviceInfo, DeviceInfoResult};
 use ocl::flags::{DEVICE_TYPE_ACCELERATOR, DEVICE_TYPE_CPU, DEVICE_TYPE_GPU};
+use std::marker::PhantomData;
 
 use super::OpenCLContext;
 use super::super::super::error::Result;
@@ -37,7 +38,7 @@ use super::super::super::hardware::{Hardware, HardwareKind};
 /// [2]: https://www.khronos.org/registry/OpenCL/sdk/1.0/docs/man/xhtml/scalarDataTypes.html
 /// [3]: https://www.khronos.org/registry/OpenCL/sdk/1.0/docs/man/xhtml/mathFunctions.html
 #[derive(Debug)]
-pub struct OpenCL {
+pub struct OpenCL<P> {
     /// A list of available devices for the first platform found.
     available_hardware: Vec<Hardware>,
     /// The specific Open CL implementation (e.g., AMD APP, NVIDIA or Intel Open CL)
@@ -45,15 +46,16 @@ pub struct OpenCL {
     /// Platforms are defined by the implementation. Platforms enables the host to interact with 
     /// OpenCL-capable devices.
     pub(in frameworks::open_cl) implementation: Implementation,
+    package: PhantomData<P>,
 }
 
-impl OpenCL {
+impl<P> OpenCL<P> {
     pub(in frameworks::open_cl) const ID: &'static str = "Open CL";
 }
 
-impl Framework for OpenCL {
+impl<P> Framework for OpenCL<P> where P: 'static {
     fn name(&self) -> &'static str {
-        return OpenCL::ID;
+        return OpenCL::<P>::ID;
     }
 
     fn hardware(&self) -> &[Hardware] {
@@ -61,7 +63,7 @@ impl Framework for OpenCL {
     }
 }
 
-impl<P> FrameworkCtor<P> for OpenCL where P: 'static {
+impl<P> FrameworkCtor for OpenCL<P> where P: 'static {
     type Context = OpenCLContext<P>;
 
     fn new() -> Result<Self> {
@@ -107,7 +109,7 @@ impl<P> FrameworkCtor<P> for OpenCL where P: 'static {
 
                 Hardware {
                     id: i,
-                    framework: OpenCL::ID,
+                    framework: OpenCL::<P>::ID,
                     kind,
                     name: d.name(),
                     compute_units,
@@ -117,6 +119,6 @@ impl<P> FrameworkCtor<P> for OpenCL where P: 'static {
             .collect::<Vec<Hardware>>()
         };
 
-        Ok(OpenCL {  available_hardware, implementation })
+        Ok(OpenCL {  available_hardware, implementation, package: PhantomData })
     }
 }
