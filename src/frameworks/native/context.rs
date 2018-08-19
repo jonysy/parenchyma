@@ -21,6 +21,10 @@ impl<Package> Context for NativeContext<Package>
         &super::HOST
     }
 
+    fn activate(&mut self, _: usize) -> Result {
+        Ok(())
+    }
+
     fn extension(&self) -> &<Package as ExtensionPackage>::Extension {
         self
     }

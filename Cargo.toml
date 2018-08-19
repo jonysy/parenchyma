@@ -15,7 +15,7 @@ license = "MIT/Apache-2.0"
 # libloading = "0.3.2"
 log = "0.4"
 ndarray = "0.10.0"
-num = "0.1"
+num = "0.2"
 ocl = "0.16.0"
 
 [dev-dependencies]

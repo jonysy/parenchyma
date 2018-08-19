@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 
 /// The native framework
 #[derive(Debug)]
-pub struct Native<P = ()> {
+pub struct Native<P> {
     hardware: [Hardware; 1],
     package: PhantomData<P>,
 }

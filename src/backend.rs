@@ -38,7 +38,7 @@ use std::ops::Deref;
 
 use super::compute_device::ComputeDevice;
 use super::context::{Context, ContextCtor};
-use super::error::Result;
+use super::error::{Error, ErrorKind, Result};
 use super::extension_package::ExtensionPackage;
 use super::framework::{Framework, FrameworkCtor};
 use super::hardware::Hardware;
@@ -69,11 +69,15 @@ impl<P> Backend<P> where P: ExtensionPackage {
     ///
     /// The return value is a backend if the process goes well; otherwise, it returns 
     /// a simple error.
-    pub fn new<F>() -> Result<Self> where F: FrameworkCtor, F::Context: ContextCtor<P,F=F> {
+    pub fn new<F>() -> Result<Self>
+        where F: FrameworkCtor,
+              F::Context: ContextCtor<P,F=F> {
+
         let framework = F::new()?;
         let hardware = framework.hardware().to_vec();
-        Backend::with(framework, hardware)
+        Self::with(framework, hardware)
     }
+
     /// Constructs a backend from the specified `framework` and `selection`.
     ///
     /// # Arguments
@@ -85,14 +89,14 @@ impl<P> Backend<P> where P: ExtensionPackage {
     ///
     /// The return value is a backend if the process goes well; otherwise, it returns 
     /// a simple error.
-    pub fn with<F>(framework: F, selection: Vec<Hardware>) 
-        -> Result<Self> 
+    pub fn with<F>(framework: F, selection: Vec<Hardware>) -> Result<Self> 
         where F: FrameworkCtor, 
-              F::Context: ContextCtor<P,F=F> {
+              F::Context: ContextCtor<P,F=F>, {
+
         info!("[PARENCHYMA] Constructing a backend using the {} framework", framework.name());
         let context = box F::Context::new(&framework, &selection)? as Box<Context<Package=P>>;
         let framework = box framework as Box<Framework>;
-        Ok(Backend { framework, context, selection })
+        Ok(Self { framework, context, selection })
     }
 }
 
@@ -106,6 +110,32 @@ impl<P> Backend<P> where P: ExtensionPackage {
     pub fn selection(&self) -> &[Hardware] {
         &self.selection
     }
+
+    /// Select the first device that meets the specified requirements.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use parenchyma::{Backend, HardwareKind, Native};
+    ///
+    /// let mut native: Backend = Backend::new::<Native>().unwrap();
+    /// assert!(native.select(|hardware| hardware.kind == HardwareKind::CPU).is_ok());
+    /// ```
+    pub fn select(&mut self, pred: &Fn(&Hardware) -> bool) -> Result {
+
+        let nth = {
+            self.selection().iter().enumerate()
+                .filter(|&(_, h)| pred(h)).map(|(i, _)| i).nth(0)
+        };
+
+        match nth {
+            Some(n) => self.context.activate(n),
+            _ => {
+                let message = "There are no devices matching the specified criteria.";
+                Err(Error::new(ErrorKind::Other, message))
+            }
+        }
+    }
     
     /// Synchronizes backend.
     pub fn synchronize(&self) -> Result {
@@ -115,6 +145,7 @@ impl<P> Backend<P> where P: ExtensionPackage {
 
 impl<P> Deref for Backend<P> where P: ExtensionPackage {
     type Target = P::Extension;
+    
     fn deref<'a>(&'a self) -> &'a Self::Target {
         self.context.extension()
     }

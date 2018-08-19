@@ -80,10 +80,11 @@ impl<P> FrameworkCtor for OpenCL<P> where P: 'static {
                 use ocl::enums::DeviceInfoResult::Error;
 
                 let _1 = d.is_available().unwrap_or(false);
-                let _2 = match d.info(Type) { Error(_) => false, _ => true };
-                let _3 = match d.info(MaxComputeUnits) { Error(_) => false, _ => true };
+                // let _2 = match d.info(Type) { Error(_) => false, _ => true };
+                // let _3 = match d.info(MaxComputeUnits) { Error(_) => false, _ => true };
+                // TODO
 
-                _1 || _2 || _3
+                _1
             })
 
             .map(|(i, d)| {

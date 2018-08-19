@@ -4,7 +4,7 @@ use std::marker::Unsize;
 use super::{OpenCL, OpenCLDevice};
 use super::super::super::compute_device::ComputeDevice;
 use super::super::super::context::{Context, ContextCtor};
-use super::super::super::error::Result;
+use super::super::super::error::{Error, ErrorKind, Result};
 use super::super::super::extension_package::{ExtensionPackage, ExtensionPackageCtor};
 use super::super::super::hardware::Hardware;
 
@@ -81,6 +81,16 @@ impl<Package> Context for OpenCLContext<Package>
 
     fn extension(&self) -> &<Package as ExtensionPackage>::Extension {
         self
+    }
+
+    fn activate(&mut self, index: usize) -> Result {
+        if index >= self.selected_devices.len() {
+            return Err(Error::new(ErrorKind::Other, "device index out of range"));
+        }
+
+        self.active = index;
+
+        Ok(())
     }
 }
 

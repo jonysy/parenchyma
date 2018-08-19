@@ -56,6 +56,7 @@ mod tensor_shape;
 mod tensor_type;
 mod utility;
 
+use num::traits::{NumCast, cast};
 use std::cell::RefCell;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
@@ -113,9 +114,16 @@ impl<I,T> From<I> for SharedTensor<T>
     }
 }
 
+impl<T> SharedTensor<T> {
+    /// Returns the shape of the tensor.
+    pub fn shape(&self) -> &TensorShape {
+        &self.shape
+    }
+}
+
 impl<T> SharedTensor<T> where T: 'static, ComputeDevice: Allocate<T> {
-    pub fn scalar(value: T) -> Result<SharedTensor<T>> {
-        Ok(array![value].into())
+    pub fn scalar(value: T) -> SharedTensor<T> {
+        array![value].into()
     }
     /// Constructs a new  shared tensor containing the provided `data` with a `shape`.
     pub fn with<I, V>(shape: I, data: V) -> Result<SharedTensor<T>> 
@@ -134,10 +142,6 @@ impl<T> SharedTensor<T> where T: 'static, ComputeDevice: Allocate<T> {
         let synch_map = TensorMap::with(1 << 0);
 
         Ok(SharedTensor { memories, shape, synch_map })
-    }
-    /// Returns the shape of the tensor.
-    pub fn shape(&self) -> &TensorShape {
-        &self.shape
     }
     /// Changes the shape of the Tensor.
     ///
@@ -348,6 +352,21 @@ impl<T> SharedTensor<T> where T: 'static, ComputeDevice: Allocate<T> {
         }
         
         Ok(())
+    }
+
+    /// Writes the `i`th sample of a batch into a `SharedTensor`.
+    ///
+    /// The size of a single sample is inferred through the first dimension of the SharedTensor, which
+    /// is assumed to be the size of the batch.
+    ///
+    /// Allocates memory on a Native Backend if necessary.
+    pub fn write_batch_sample<I>(&mut self, data: &[I], i: usize)
+        where T: Copy + NumCast, 
+              I: Copy + NumCast {
+                
+        let batch_size = self.shape().capacity();
+        let sample_size = batch_size / self.shape().dimensions()[0];
+        self.write_offset_iter(data.iter().map(|elem| cast(*elem).unwrap()), i * sample_size).unwrap()
     }
 }
 
