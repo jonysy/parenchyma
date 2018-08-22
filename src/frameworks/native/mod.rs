@@ -59,11 +59,11 @@ impl<P> Matrix for Context<P> where P: Dependency<Package> {
     fn gemm(
         self: &Self,
         alpha: &SharedTensor,
-        amatrix: &SharedTensor,
         amatrix_transposition: Transposition,
-        beta: &SharedTensor,
-        bmatrix: &SharedTensor,
+        amatrix: &SharedTensor,
         bmatrix_transposition: Transposition,
+        bmatrix: &SharedTensor,
+        beta: &SharedTensor,
         cmatrix: &mut SharedTensor) -> Result {
 
         let a_0 = amatrix.shape().dimensions()[0] as i32;
@@ -75,16 +75,8 @@ impl<P> Matrix for Context<P> where P: Dependency<Package> {
         let c_0 = cmatrix.shape().dimensions()[0] as i32;
         let c_1 = cmatrix.shape().dimensions().iter().skip(1).fold(1, |prod, i| prod * i) as i32;
 
-        // let n = if bmatrix_transposition == Transposition::NoTranspose { b_1 }  else { b_0 };
-
-        // let (m, k) = if amatrix_transposition == Transposition::NoTranspose {
-        //     (a_0, a_1)
-        // } else {
-        //     (a_1, a_0)
-        // };
-
-        let mut input = as_matrix(amatrix.as_slice()?, a_0 as usize, a_1 as usize);
-        let mut weights = as_matrix(bmatrix.as_slice()?, b_0 as usize, b_1 as usize);
+        let input = as_matrix(amatrix.as_slice()?, a_0 as usize, a_1 as usize);
+        let weights = as_matrix(bmatrix.as_slice()?, b_0 as usize, b_1 as usize);
         let mut output = as_matrix(cmatrix.as_slice()?, c_0 as usize, c_1 as usize);
 
         rblas::Gemm::gemm(

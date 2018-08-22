@@ -33,10 +33,11 @@ use parenchyma::frameworks::OpenCLContext;
 /// Caches instances of `Kernel`
 #[derive(Debug)]
 pub struct OpenCLPackage {
-    pub(in frameworks::open_cl) program: ocl::Program }
+    pub(in frameworks::open_cl) program: ocl::Program,
+}
 
 impl OpenCLPackage {
-    pub fn compile(cx: &mut OpenCLContext) -> Result<OpenCLPackage> {
+    pub fn compile(cx: &mut OpenCLContext<()>) -> Result<OpenCLPackage> {
         let program = cx.program(vec![
             CString::new(include_str!("source/common.cl")).unwrap(),
 

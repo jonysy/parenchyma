@@ -37,16 +37,16 @@ pub trait Matrix {
     /// # Arguments
     ///
     /// * `alpha` - The factor of matrix A (scalar).
-    /// * `amatrix` - The buffer object storing matrix A..
     /// * `amatrix_transposition` - How matrix A is to be transposed.
+    /// * `amatrix` - The buffer object storing matrix A..
     fn gemm(
         self: &Self,
         alpha: &SharedTensor,
-        amatrix: &SharedTensor,
         amatrix_transposition: Transposition,
-        beta: &SharedTensor,
-        bmatrix: &SharedTensor,
+        amatrix: &SharedTensor,
         bmatrix_transposition: Transposition,
+        bmatrix: &SharedTensor,
+        beta: &SharedTensor,
         cmatrix: &mut SharedTensor) -> Result {
         unimplemented!()
     }

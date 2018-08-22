@@ -48,13 +48,13 @@
 //! [BLAS]: https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms
 //! [Parenchyma]: https://github.com/lychee-eng/parenchyma
 #![allow(unused_variables)]
-#![feature(non_modrs_mods)]
+#![feature(non_modrs_mods, type_ascription)]
 
 extern crate ocl;
 extern crate parenchyma;
 extern crate rblas;
 
 pub use self::extension_package::{Extension, GenericMatrix, Package, Transposition};
+pub mod frameworks;
 
 mod extension_package;
-mod frameworks;
