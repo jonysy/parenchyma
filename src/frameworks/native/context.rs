@@ -9,7 +9,7 @@ use super::super::super::extension_package::ExtensionPackage;
 use super::super::super::hardware::Hardware;
 
 /// Defines a Native context.
-pub struct NativeContext<P = ()>(PhantomData<P>);
+pub struct NativeContext<P>(PhantomData<P>);
 
 impl<Package> Context for NativeContext<Package> 
     where Package: ExtensionPackage, 

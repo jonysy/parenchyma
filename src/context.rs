@@ -18,9 +18,6 @@ pub trait Context: 'static {
     fn active_codev(&self) -> &ComputeDevice;
     /// Returns the package extension.
     fn extension(&self) -> &<Self::Package as ExtensionPackage>::Extension;
-    // /// Returns all _activatable_ hardware provided to the context.
-    // fn selection(&self) -> &[Hardware];
-
     /// Set the device at the specified `index` as the active device.
     ///
     /// Only one device can be the _active_ device - the device in which operations are executed -

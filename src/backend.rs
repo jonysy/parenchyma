@@ -57,6 +57,8 @@ pub struct Backend<Package = ()> {
     /// or more devices that are capable of executing methods and synchronizing memory. See 
     /// the `Context` trait for more information.
     context: Box<Context<Package=Package>>,
+    /// All _activatable_ hardware provided to the context.
+    ///
     /// A cache of the hardware selection which is used as a representation of each framework's 
     /// list of available devices when selecting a new active device.
     selection: Vec<Hardware>

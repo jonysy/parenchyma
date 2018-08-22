@@ -29,7 +29,7 @@ use super::super::super::hardware::Hardware;
 ///
 /// [buffer]: ./frameworks/opencl/struct.Memory.html
 /// [event]: ./frameworks/opencl/struct.Event.html
-pub struct OpenCLContext<P = ()> {
+pub struct OpenCLContext<P> {
     /// The context.
     context: ocl::Context,
     /// The index of the _active_ device.

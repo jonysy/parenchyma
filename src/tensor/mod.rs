@@ -274,6 +274,7 @@ impl<T> SharedTensor<T> where T: 'static, ComputeDevice: Allocate<T> {
     ///
     /// TODO
     ///
+    /// * mark unsafe
     /// * Add an `invalidate` method:
     ///
     ///     If the caller fails to overwrite memory, it must call `invalidate` to return the vector
