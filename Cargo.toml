@@ -1,0 +1,15 @@
+[package]
+name = "parenchyma-ml"
+version = "0.1.0"
+authors = ["Jony <jonysy@users.noreply.github.com>"]
+license = "MIT/Apache-2.0"
+
+[dependencies.parenchyma]
+path = "../parenchyma"
+version = "0.0.4"
+
+[dependencies.parenchyma-blas]
+path = "../parenchyma-blas"
+
+[dependencies.parenchyma-deep]
+path = "../parenchyma-deep"
