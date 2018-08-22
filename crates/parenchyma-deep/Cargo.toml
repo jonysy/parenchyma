@@ -1,0 +1,15 @@
+[package]
+name = "parenchyma-deep"
+version = "0.1.0"
+authors = ["Jony <jonysy@users.noreply.github.com>"]
+license = "MIT/Apache-2.0"
+
+[dependencies]
+ocl = "0.16.0"
+
+[dependencies.parenchyma]
+path = "../parenchyma"
+version = "0.0.4"
+
+[dev-dependencies]
+lazy_static = "1.1.0"
