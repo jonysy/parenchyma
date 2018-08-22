@@ -5,7 +5,7 @@ authors = ["Jony <jonysy@users.noreply.github.com>"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
-ocl = "0.15.0"
+ocl = "0.16.0"
 
 [dependencies.parenchyma]
 path = "../parenchyma"

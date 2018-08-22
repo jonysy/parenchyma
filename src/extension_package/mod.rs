@@ -12,7 +12,15 @@ use parenchyma::extension_package::ExtensionPackage;
 
 /// The BLAS package.
 pub enum Package {
-    // ..
+    OpenCL(::frameworks::open_cl::OpenCLPackage),
+}
+
+impl Package {
+    pub fn open_cl(&self) -> &::frameworks::open_cl::OpenCLPackage {
+        match self {
+            &Package::OpenCL(ref package) => package
+        }
+    }
 }
 
 /// Provides the functionality for a backend to support DNN related operations.

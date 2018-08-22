@@ -5,6 +5,6 @@ extern crate ocl;
 extern crate parenchyma;
 
 pub use self::extension_package::{Extension, Package};
+pub mod frameworks;
 
 mod extension_package;
-mod frameworks;
