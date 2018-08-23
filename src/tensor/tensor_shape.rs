@@ -5,7 +5,7 @@ use super::super::error::{Error, ErrorKind, Result};
 /// **note**: `From` conversion implementations are provided for low-rank shapes.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TensorShape {
-    /// The maximum number of components the associated tensor can store.
+    /// The number of components the associated tensor can store.
     ///
     /// # Example
     ///

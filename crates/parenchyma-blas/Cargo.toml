@@ -9,7 +9,7 @@ ocl = "0.16.0"
 rblas = "0.0.13"
 
 [dependencies.parenchyma]
-path = "../parenchyma"
+path = "../../"
 version = "0.0.4"
 
 [dev-dependencies]

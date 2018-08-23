@@ -1,3 +1,5 @@
+//! Parenchyma extension package for backend-agnostic BLAS operations.
+//!
 //! Provides backend-agnostic [BLAS] operations for [Parenchyma].
 //!
 //! BLAS (Basic Linear Algebra Subprograms) is a specification that prescribes a set of low-level

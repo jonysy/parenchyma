@@ -1,3 +1,5 @@
+//! Parenchyma extension bundle for backend-agnostic operations related to machine learning (ML).
+//!
 //! A Parenchyma package that bundles the BLAS and Deep NN packages together to make one convenient
 //! ML package.
 //!

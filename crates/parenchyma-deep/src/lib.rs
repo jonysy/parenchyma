@@ -1,3 +1,5 @@
+//! Parenchyma extension package for backend-agnostic deep neural network (NN) operations.
+
 #![allow(unused_variables)]
 #![feature(non_modrs_mods)]
 
